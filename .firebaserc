@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "lab-ladger",
+    "staging": "lab-ladger"
+  },
+  "targets": {},
+  "etags": {}
+}
