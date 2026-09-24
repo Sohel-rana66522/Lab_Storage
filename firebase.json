@@ -1,6 +1,1 @@
-{
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  }
-}
+{"firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"},"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"lab-ladger","configurations":{"android":"1:870347970067:android:1eda2a95a2bf870a7811e6","web":"1:870347970067:web:1d50740d5d1a66657811e6"}}}}}}

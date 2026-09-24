@@ -49,13 +49,6 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBDvarhV47B8cXqJdAqUCXqKZWnpjFDLNI',
-    appId: '1:870347970067:android:1eda2a95a2bf870a7811e6',
-    messagingSenderId: '870347970067',
-    projectId: 'lab-ladger',
-    storageBucket: 'lab-ladger.firebasestorage.app',
-  );
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyDRCZyYbhDOa2RtJi_y-lkjnO_dyHwXEH0',
     appId: '1:870347970067:web:1d50740d5d1a66657811e6',
@@ -64,5 +57,13 @@ class DefaultFirebaseOptions {
     authDomain: 'lab-ladger.firebaseapp.com',
     storageBucket: 'lab-ladger.firebasestorage.app',
     measurementId: 'G-R2KVHZVFM5',
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyBDvarhV47B8cXqJdAqUCXqKZWnpjFDLNI',
+    appId: '1:870347970067:android:1eda2a95a2bf870a7811e6',
+    messagingSenderId: '870347970067',
+    projectId: 'lab-ladger',
+    storageBucket: 'lab-ladger.firebasestorage.app',
   );
 }

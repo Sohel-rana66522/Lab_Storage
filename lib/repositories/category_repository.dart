@@ -33,13 +33,26 @@ class CategoryRepository {
     if (name.trim().isEmpty) throw AppException('Folder name is required.');
     await _assertNameFree(name);
     final ref = _col.doc();
-    await ref.set(CategoryModel(
+    try {
+      print('Creating folder "$name" with id ${ref.id}');
+      await ref.set(CategoryModel(
+        id: ref.id,
+        name: name.trim(),
+        description: _clean(description),
+        location: _clean(location),
+        createdBy: uid,
+      ).toFirestore());
+      print('Created folder "$name" with id ${ref.id}');
+    } catch (e) {
+      throw AppException('Failed to create folder "$name": $e');
+    }
+   /* await ref.set(CategoryModel(
       id: ref.id,
       name: name.trim(),
       description: _clean(description),
       location: _clean(location),
       createdBy: uid,
-    ).toFirestore());
+    ).toFirestore());*/
     return ref.id;
   }
 
