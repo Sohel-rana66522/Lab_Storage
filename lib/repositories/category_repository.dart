@@ -23,8 +23,46 @@ class CategoryRepository {
       throw AppException('A folder named "${name.trim()}" already exists.');
     }
   }
+Future<String> create({
+  required String name,
+  String? description,
+  String? location,
+  required String uid,
+}) async {
+  print('CREATE: started');
 
-  Future<String> create({
+  if (name.trim().isEmpty) {
+    throw AppException('Folder name is required.');
+  }
+
+  print('CREATE: checking duplicate name');
+
+  final dup = await _col
+      .where('nameLower', isEqualTo: name.trim().toLowerCase())
+      .limit(2)
+      .get();
+
+  print('CREATE: duplicate check finished');
+  print('CREATE: existing docs = ${dup.docs.length}');
+
+  final ref = _col.doc();
+
+  print('CREATE: document ID = ${ref.id}');
+  print('CREATE: attempting Firestore set');
+
+  await ref.set(CategoryModel(
+      id: ref.id,
+      name: name.trim(),
+      description: _clean(description),
+      location: _clean(location),
+      createdBy: uid,
+    ).toFirestore());
+
+  print('CREATE: Firestore set SUCCESS');
+
+  return ref.id;
+}
+ /* Future<String> create({
     required String name,
     String? description,
     String? location,
@@ -54,7 +92,7 @@ class CategoryRepository {
       createdBy: uid,
     ).toFirestore());*/
     return ref.id;
-  }
+  }*/
 
   Future<void> update(String id, {required String name, String? description, String? location}) async {
     if (name.trim().isEmpty) throw AppException('Folder name is required.');
