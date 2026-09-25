@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,5 +11,17 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Some networks (corporate firewalls/proxies, certain VPNs, antivirus
+  // SSL-scanning) silently block Firestore's default streaming connection
+  // while other Google traffic (e.g. Auth) gets through fine — writes and
+  // listeners then hang forever with no error. Auto-detecting whether
+  // long-polling is needed instead works around that transparently.
+  if (kIsWeb) {
+    FirebaseFirestore.instance.settings = const Settings(
+      webExperimentalAutoDetectLongPolling: true,
+    );
+  }
+
   runApp(const ProviderScope(child: LabLedgerApp()));
 }

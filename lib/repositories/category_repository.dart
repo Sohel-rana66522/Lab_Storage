@@ -50,14 +50,21 @@ Future<String> create({
   print('CREATE: document ID = ${ref.id}');
   print('CREATE: attempting Firestore set');
 
-  await ref.set(CategoryModel(
-      id: ref.id,
-      name: name.trim(),
-      description: _clean(description),
-      location: _clean(location),
-      createdBy: uid,
-    ).toFirestore());
+ print('BEFORE SET');
 
+try {
+  await ref.set({
+    'id': ref.id,
+    'name': name.trim(),
+  }).timeout(
+    const Duration(seconds: 10),
+  );
+
+  print('AFTER SET');
+} catch (e, st) {
+  print('SET ERROR: $e');
+  print(st);
+}
   print('CREATE: Firestore set SUCCESS');
 
   return ref.id;
