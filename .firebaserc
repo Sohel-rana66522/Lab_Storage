@@ -1,7 +1,6 @@
 {
   "projects": {
-    "default": "lab-ladger",
-    "staging": "lab-ladger"
+    "default": "labapp-bb382"
   },
   "targets": {},
   "etags": {}

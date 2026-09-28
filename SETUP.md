@@ -43,10 +43,10 @@ Easiest: paste the contents of `firestore.rules` directly into the Firestore
 Or via the CLI:
 
 ```bash
-npm install -g firebase-tools   # once
-firebase login
-firebase use --add                # pick your project
-firebase deploy --only firestore:rules
+npm.cmd install -g firebase-tools   # once
+firebase.cmd login
+firebase.cmd use --add                # pick your project
+firebase.cmd deploy --only firestore:rules
 ```
 
 > **Known Firebase quirk:** the CLI's own "ensure database exists" preflight check
@@ -65,7 +65,7 @@ Firestore auto-indexes every single field by default. The only *composite*
 index this app needs is on `transactions`: `chemicalId` (Ascending) +
 `createdAt` (Descending). Either:
 
-- Run `firebase deploy --only firestore:indexes`, or
+- Run `firebase.cmd deploy --only firestore:indexes`, or
 - Just use the app — if that specific screen ever needs the index, Firestore's
   error message contains a direct link that creates it for you with one click.
 

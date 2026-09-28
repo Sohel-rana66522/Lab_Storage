@@ -23,53 +23,8 @@ class CategoryRepository {
       throw AppException('A folder named "${name.trim()}" already exists.');
     }
   }
-Future<String> create({
-  required String name,
-  String? description,
-  String? location,
-  required String uid,
-}) async {
-  print('CREATE: started');
-
-  if (name.trim().isEmpty) {
-    throw AppException('Folder name is required.');
-  }
-
-  print('CREATE: checking duplicate name');
-
-  final dup = await _col
-      .where('nameLower', isEqualTo: name.trim().toLowerCase())
-      .limit(2)
-      .get();
-
-  print('CREATE: duplicate check finished');
-  print('CREATE: existing docs = ${dup.docs.length}');
-
-  final ref = _col.doc();
-
-  print('CREATE: document ID = ${ref.id}');
-  print('CREATE: attempting Firestore set');
-
- print('BEFORE SET');
-
-try {
-  await ref.set({
-    'id': ref.id,
-    'name': name.trim(),
-  }).timeout(
-    const Duration(seconds: 10),
-  );
-
-  print('AFTER SET');
-} catch (e, st) {
-  print('SET ERROR: $e');
-  print(st);
-}
-  print('CREATE: Firestore set SUCCESS');
-
-  return ref.id;
-}
- /* Future<String> create({
+ 
+  Future<String> create({
     required String name,
     String? description,
     String? location,
@@ -99,7 +54,7 @@ try {
       createdBy: uid,
     ).toFirestore());*/
     return ref.id;
-  }*/
+  }
 
   Future<void> update(String id, {required String name, String? description, String? location}) async {
     if (name.trim().isEmpty) throw AppException('Folder name is required.');
@@ -131,3 +86,13 @@ try {
     await batch.commit();
   }
 }
+/*
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}*/

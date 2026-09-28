@@ -50,20 +50,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDRCZyYbhDOa2RtJi_y-lkjnO_dyHwXEH0',
-    appId: '1:870347970067:web:1d50740d5d1a66657811e6',
-    messagingSenderId: '870347970067',
-    projectId: 'lab-ladger',
-    authDomain: 'lab-ladger.firebaseapp.com',
-    storageBucket: 'lab-ladger.firebasestorage.app',
-    measurementId: 'G-R2KVHZVFM5',
+    apiKey: 'AIzaSyCx58jVJYh_FA-tvLdXDTtZWDTMCHZFwg8',
+    appId: '1:367163385205:web:c356ab02a0e643837c1f3c',
+    messagingSenderId: '367163385205',
+    projectId: 'labapp-bb382',
+    authDomain: 'labapp-bb382.firebaseapp.com',
+    storageBucket: 'labapp-bb382.firebasestorage.app',
+    measurementId: 'G-9NSCW2DVLC',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBDvarhV47B8cXqJdAqUCXqKZWnpjFDLNI',
-    appId: '1:870347970067:android:1eda2a95a2bf870a7811e6',
-    messagingSenderId: '870347970067',
-    projectId: 'lab-ladger',
-    storageBucket: 'lab-ladger.firebasestorage.app',
+    apiKey: 'AIzaSyCKE08tC6ApCeF3hwtRS4dghOP2BXgTMHc',
+    appId: '1:367163385205:android:c2d174f35cbf55b97c1f3c',
+    messagingSenderId: '367163385205',
+    projectId: 'labapp-bb382',
+    storageBucket: 'labapp-bb382.firebasestorage.app',
   );
 }

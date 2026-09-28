@@ -55,6 +55,7 @@ class _FolderDialogState extends ConsumerState<_FolderDialog> {
       String id;
       if (widget.existing == null) {
         print(3);
+        
         id = await repo.create(
             name: _name.text, description: _desc.text, location: _loc.text, uid: user.uid);
             print(4);
