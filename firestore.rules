@@ -47,7 +47,7 @@ service cloud.firestore {
         (
           request.resource.data.currentStock >= 0 &&
           existsAfter(/databases/$(database)/documents/transactions/$(request.resource.data.lastTransactionId)) &&
-          get(/databases/$(database)/documents/transactions/$(request.resource.data.lastTransactionId)).data.chemicalId == chemicalId
+          getAfter(/databases/$(database)/documents/transactions/$(request.resource.data.lastTransactionId)).data.chemicalId == chemicalId
         )
       );
 

@@ -34,7 +34,7 @@ class CategoryRepository {
     await _assertNameFree(name);
     final ref = _col.doc();
     try {
-      print('Creating folder "$name" with id ${ref.id}');
+     
       await ref.set(CategoryModel(
         id: ref.id,
         name: name.trim(),
@@ -42,7 +42,7 @@ class CategoryRepository {
         location: _clean(location),
         createdBy: uid,
       ).toFirestore());
-      print('Created folder "$name" with id ${ref.id}');
+   
     } catch (e) {
       throw AppException('Failed to create folder "$name": $e');
     }
