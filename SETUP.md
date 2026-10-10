@@ -56,8 +56,11 @@ firebase.cmd deploy --only firestore:rules
 > (step 4), then deploy rules by pasting them into the console instead of via
 > the CLI.
 
-`firestore.rules` only requires the request to be signed in — there's no role
-system, so every authenticated account has full access.
+`firestore.rules` treats every real (email/password) account as laboratory staff with
+full access — there's no role system. Anonymous sessions, which only the **Client
+Portal** uses, can read folders and chemicals and create order requests, and nothing
+else. See `CLIENT_PORTAL.html` for the portal's setup (it needs **Anonymous**
+sign-in enabled in Authentication).
 
 ## 6. Indexes (optional, only needed for the chemical entry-history screen)
 

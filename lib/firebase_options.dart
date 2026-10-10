@@ -50,20 +50,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCx58jVJYh_FA-tvLdXDTtZWDTMCHZFwg8',
-    appId: '1:367163385205:web:c356ab02a0e643837c1f3c',
-    messagingSenderId: '367163385205',
-    projectId: 'labapp-bb382',
-    authDomain: 'labapp-bb382.firebaseapp.com',
-    storageBucket: 'labapp-bb382.firebasestorage.app',
-    measurementId: 'G-9NSCW2DVLC',
+    apiKey: 'AIzaSyCOesyOI3nan_zpbIjx3r5Hi02EzUGb3Ck',
+    appId: '1:826506390574:web:a76af4d79a223ab3b983bf',
+    messagingSenderId: '826506390574',
+    projectId: 'ilet-lab-d1712',
+    authDomain: 'ilet-lab-d1712.firebaseapp.com',
+    storageBucket: 'ilet-lab-d1712.firebasestorage.app',
+    measurementId: 'G-FZM2EP6YYB',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCKE08tC6ApCeF3hwtRS4dghOP2BXgTMHc',
-    appId: '1:367163385205:android:c2d174f35cbf55b97c1f3c',
-    messagingSenderId: '367163385205',
-    projectId: 'labapp-bb382',
-    storageBucket: 'labapp-bb382.firebasestorage.app',
+    apiKey: 'AIzaSyB8jLgH0TWCm5hvpJ5a7Bm8n4xqgb_lzQU',
+    appId: '1:826506390574:android:b590fab1266ba4e4b983bf',
+    messagingSenderId: '826506390574',
+    projectId: 'ilet-lab-d1712',
+    storageBucket: 'ilet-lab-d1712.firebasestorage.app',
   );
 }

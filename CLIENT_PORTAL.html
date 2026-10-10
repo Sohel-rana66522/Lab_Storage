@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab Ledger — Client Portal</title>
+<style>
+  :root {
+    --surface: #FAF8FF; --card: #FFFFFF; --low: #F2F3FF; --container: #EAEDFF;
+    --ink: #131B2E; --muted: #3E4947; --line: #E2E8F0;
+    --primary: #005C55; --primary-2: #0F766E; --accent: #006399;
+    --warn-bg: #FEF3C7; --warn: #92400E; --ok-bg: #D1FAE5; --ok: #065F46;
+    --err-bg: #FFDAD6; --err: #93000A;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface); color: var(--ink);
+    font: 15px/1.6 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 28px; letter-spacing: -.02em; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 15px; margin: 20px 0 4px; }
+  p { margin: 8px 0; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border-radius: 12px; padding: 16px 18px; margin: 12px 0;
+    box-shadow: 0 1px 2px rgba(15,23,42,.08); }
+  .note { border-radius: 10px; padding: 12px 14px; margin: 14px 0; }
+  .note.warn { background: var(--warn-bg); color: var(--warn); }
+  .note.ok { background: var(--ok-bg); color: var(--ok); }
+  .note.err { background: var(--err-bg); color: var(--err); }
+  code { font: 13px/1.4 "JetBrains Mono", ui-monospace, Consolas, monospace;
+    background: var(--container); padding: 1px 6px; border-radius: 4px; }
+  pre { background: #131B2E; color: #EEF0FF; border-radius: 10px; padding: 14px 16px; overflow-x: auto;
+    font: 13px/1.5 "JetBrains Mono", ui-monospace, Consolas, monospace; margin: 10px 0; }
+  pre code { background: none; padding: 0; color: inherit; }
+  ol, ul { padding-left: 22px; } li { margin: 4px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--card); border-radius: 10px;
+    overflow: hidden; box-shadow: 0 1px 2px rgba(15,23,42,.08); margin: 10px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--low); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  .flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 12px 0; }
+  .flow span { background: var(--container); border-radius: 8px; padding: 4px 10px; font-size: 13px; }
+  .flow i { color: var(--muted); font-style: normal; }
+  @media (max-width: 560px) { main { padding: 20px 14px 48px; } h1 { font-size: 24px; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Lab Ledger — Client Portal</h1>
+<p class="sub">A separate, read-only front door to the same Firestore data as the laboratory app. Clients browse folders,
+see the real available quantity, build a cart and submit a chemical request.</p>
+
+<div class="flow">
+  <span>Home (folders)</span><i>→</i><span>Folder (chemicals)</span><i>→</i><span>Cart</span><i>→</i>
+  <span>Order request</span><i>→</i><span>Order submitted</span>
+</div>
+
+<div class="note warn">
+  <strong>Before you run it:</strong> the portal has not been compiled or run yet. The environment it was written in has no
+  Flutter SDK. Run <code>flutter pub get</code>, <code>flutter analyze</code> and <code>flutter test</code> first (steps below),
+  and use the test checklist at the end.
+</div>
+
+<h2>1. One-time setup</h2>
+<ol>
+  <li><strong>Enable anonymous sign-in.</strong> Firebase Console → Authentication → Sign-in method → <em>Anonymous</em> → Enable.
+    Without this the portal shows "not switched on yet" and cannot load any data.</li>
+  <li><strong>Publish the new security rules.</strong> Paste <code>firestore.rules</code> into Firestore → Rules → Publish
+    (or <code>firebase deploy --only firestore:rules</code>). Do this <em>before</em> the portal goes live.</li>
+  <li><strong>Install the new package</strong> (<code>shared_preferences</code>, used to keep the cart across a page refresh):
+<pre><code>flutter pub get</code></pre></li>
+  <li><strong>Check it:</strong>
+<pre><code>flutter analyze
+flutter test</code></pre></li>
+  <li><strong>Run the portal</strong> (the laboratory app still runs with plain <code>flutter run</code>):
+<pre><code>flutter run -d chrome -t lib/main_client.dart</code></pre></li>
+</ol>
+
+<h2>2. Hosting the portal</h2>
+<p>The laboratory app and the portal are two builds of the same project, so give each its own Firebase Hosting site.
+Keeping them on separate addresses also keeps staff logins and client sessions apart (browser sign-in is stored per address).</p>
+<pre><code>flutter build web -t lib/main_client.dart --release
+Copy-Item -Recurse build\web build\client      # PowerShell; use cp -r on macOS/Linux
+
+firebase hosting:sites:create your-client-site-name
+firebase target:apply hosting client your-client-site-name</code></pre>
+<p>Then add this to <code>firebase.json</code> and deploy with <code>firebase deploy --only hosting:client</code>:</p>
+<pre><code>"hosting": [
+  { "target": "client", "public": "build/client", "ignore": ["firebase.json", "**/.*"] }
+]</code></pre>
+<p>Build the laboratory app into its own folder the same way (<code>flutter build web</code>, then a separate hosting target).</p>
+
+<h2>3. What was added, and what was not touched</h2>
+<table>
+  <tr><th>New</th><th>Purpose</th></tr>
+  <tr><td><code>lib/main_client.dart</code></td><td>Entry point of the portal.</td></tr>
+  <tr><td><code>lib/client/</code></td><td>Pages (home, folder, cart, order, success), cart provider, order repository and model, widgets.</td></tr>
+  <tr><td><code>test/client_cart_test.dart</code></td><td>Unit tests for quantity rules, unit conversion, order IDs, storage.</td></tr>
+</table>
+<table>
+  <tr><th>Changed</th><th>What changed</th></tr>
+  <tr><td><code>firestore.rules</code></td><td>Added <code>orders</code> rules; staff-only writes now require a non-anonymous account (see section 5).</td></tr>
+  <tr><td><code>lib/core/constants/firestore_paths.dart</code></td><td>One added constant: <code>Col.orders</code>.</td></tr>
+  <tr><td><code>pubspec.yaml</code></td><td>Added <code>shared_preferences</code>.</td></tr>
+  <tr><td><code>SETUP.md</code></td><td>Updated the paragraph about the rules.</td></tr>
+</table>
+<p>Not touched: <code>main.dart</code>, <code>router.dart</code>, every laboratory screen, every existing model, repository and provider,
+the stock calculation and <code>TransactionRepository.record()</code>. The portal reuses <code>ChemicalModel</code>, <code>CategoryModel</code>,
+<code>categoriesProvider</code>, <code>chemicalsProvider</code>, <code>FolderStats</code>, <code>FolderCard</code>, <code>StockChip</code>,
+<code>Units</code>, the theme and the shared widgets.</p>
+
+<h2>4. Order data</h2>
+<p>Collection <code>orders</code>, document id = order ID (for example <code>LAB-7K3MQ9XP</code>).</p>
+<table>
+  <tr><th>Field</th><th>Value</th></tr>
+  <tr><td><code>id</code></td><td>Same as the document id.</td></tr>
+  <tr><td><code>clientName</code>, <code>clientId</code>, <code>supervisorName</code></td><td>As typed by the client.</td></tr>
+  <tr><td><code>status</code></td><td><code>"Pending"</code> on creation (the project had no earlier status convention).</td></tr>
+  <tr><td><code>createdAt</code></td><td>Server timestamp.</td></tr>
+  <tr><td><code>clientUid</code></td><td>Firebase uid of the anonymous session that sent it.</td></tr>
+  <tr><td><code>itemCount</code></td><td>Number of chemicals in the order.</td></tr>
+  <tr><td><code>items[]</code></td><td><code>chemicalId, chemicalName, formula, requestedQuantity, unit, categoryId, categoryName</code>, plus
+    <code>baseQuantity</code> and <code>baseUnit</code> (the same amount in the unit the lab tracks the chemical in) and
+    <code>availableAtRequest</code> (stock seen when ordering).</td></tr>
+</table>
+<p>Example: a client asks for 500&nbsp;mL of a chemical the lab tracks in litres. The item stores
+<code>requestedQuantity: 500, unit: "mL"</code> and <code>baseQuantity: 0.5, baseUnit: "L"</code>, so staff can compare it directly with the ledger.</p>
+
+<div class="note ok">
+  <strong>Stock is never changed by the portal.</strong> Submitting only creates a Pending request. Actual issuing and stock deduction
+  still happen through the existing <em>Record Usage</em> workflow in the laboratory app.
+</div>
+
+<h2>5. Security</h2>
+<h3>How clients are identified</h3>
+<p>Clients sign in <strong>anonymously</strong> and automatically; there is no client login screen. The existing rules treated every signed-in user
+as full-access staff, which would have given every anonymous visitor write access to your inventory. The rules now define
+<code>isStaff()</code> as "signed in <em>and</em> not anonymous". Your laboratory accounts (email + password) are unaffected.</p>
+<table>
+  <tr><th>Collection</th><th>Client portal (anonymous)</th><th>Laboratory staff</th></tr>
+  <tr><td><code>categories</code></td><td>Read</td><td>Read, create, update, delete</td></tr>
+  <tr><td><code>chemicals</code></td><td>Read (live <code>currentStock</code>)</td><td>As before (stock only changes through a paired ledger entry)</td></tr>
+  <tr><td><code>transactions</code></td><td>No access (it contains student names)</td><td>As before</td></tr>
+  <tr><td><code>orders</code></td><td><strong>Create only</strong>, with strict shape checks</td><td>Read; update processing fields only (<code>status, updatedAt, handledBy, handledByName, staffNote</code>); no delete</td></tr>
+</table>
+<p>An order is accepted only if: it has exactly the expected fields; the ID matches <code>LAB-XXXXXXXX</code> and the document id; <code>clientUid</code> equals the sender's uid;
+<code>status</code> is <code>Pending</code>; <code>createdAt</code> is the server time; the three text fields are non-blank and within length limits; and it has 1–50 items.
+An existing order can never be overwritten, so one client cannot alter another's request.</p>
+
+<h3>Things to know</h3>
+<ul>
+  <li><strong>Stock is checked in the app, not in the rules.</strong> Rules cannot loop over an order's items, so "quantity ≤ available" is enforced by the app, which re-reads
+    stock from the server at the moment of submission. A modified client could bypass that, which is harmless here: the order is only a request and staff still approve what is issued.</li>
+  <li><strong>Clients can read whole chemical documents</strong> (location, notes, CAS, minimum stock), not just the available quantity. Firestore cannot hide individual fields.
+    If that matters, a later step is a separate public "catalogue" collection kept in sync by staff or a Cloud Function.</li>
+  <li><strong>Anonymous access can be scripted.</strong> Anyone can obtain an anonymous session. Turning on <em>Firebase App Check</em> for the portal is recommended to limit abuse.</li>
+  <li><strong>Staff accounts are trusted fully</strong> (unchanged). Keep creating them manually in the Firebase console; do not enable email sign-up.</li>
+</ul>
+
+<h2>6. How the portal behaves</h2>
+<ul>
+  <li><strong>Home:</strong> the laboratory's folder grid (<code>FolderCard</code>) with search by chemical name or formula (<code>H2SO4</code> also finds <code>H₂SO₄</code>). The staff-only low-stock count is hidden.</li>
+  <li><strong>Folder:</strong> each chemical shows name, formula, available quantity with unit, a stock chip and Add / Remove. Depleted chemicals cannot be added.</li>
+  <li><strong>Cart:</strong> − / + buttons, a typed quantity, and a unit switch between compatible units (L ↔ mL, kg ↔ g ↔ mg) that converts the amount. Quantities above the current stock are flagged and block the next step.
+    The cart is kept in this browser, so a refresh keeps it; availability is always re-read live.</li>
+  <li><strong>Order:</strong> name, ID and supervisor are required. On submit, the current stock is re-read from the server; if anything no longer fits, nothing is saved and the problem is listed.
+    On success the cart is cleared and the order ID is shown. The page never says chemicals were issued.</li>
+  <li><strong>Layout:</strong> phone = top bar + floating cart button; tablet = navigation rail; desktop = extended sidebar (same breakpoints as the laboratory app). The cart icon shows the number of chemicals.</li>
+</ul>
+
+<h2>7. Not built (outside this request)</h2>
+<ul>
+  <li><strong>No screen for staff to see orders yet.</strong> Until one is added to the laboratory app, review orders in the Firebase console under <code>orders</code>. <code>OrderModel.fromFirestore</code> is ready for a future Orders screen.</li>
+  <li>Clients cannot look up an order after submitting it (they keep the order ID shown on screen).</li>
+  <li>The order ID is the only reference; there are no emails or notifications.</li>
+</ul>
+
+<h2>8. Test checklist</h2>
+<ol>
+  <li>Open the portal: folders appear with the right chemical counts.</li>
+  <li>Open a folder: chemicals show the same available quantity as in the laboratory app.</li>
+  <li>Record a usage in the laboratory app: the portal's quantity updates live, without a refresh.</li>
+  <li>Add two chemicals; the cart badge shows 2. Refresh the page: the cart is still there.</li>
+  <li>Change a unit (L → mL): the quantity converts. Type a quantity above the stock: it turns red and "Proceed to Order" is disabled.</li>
+  <li>Type 0 or clear the box: blocked. Remove an item: the badge drops.</li>
+  <li>On the order page, submit with each field empty in turn: each shows an error and nothing is saved.</li>
+  <li>Submit a valid order: the success page shows <code>LAB-XXXXXXXX</code>; a document appears in <code>orders</code> with status <code>Pending</code>; <strong>chemical stock is unchanged</strong>.</li>
+  <li>Turn off the network and submit: a clear "no internet" message, and the cart is kept.</li>
+  <li>Rules check (Rules Playground or a script): an anonymous user <em>cannot</em> update a chemical, create a folder, create a transaction, read <code>orders</code> or edit an order, and a staff account still can do all its usual work.</li>
+  <li>Resize the browser from phone to desktop width and check each page.</li>
+</ol>
+
+</main>
+</body>
+</html>

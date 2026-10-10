@@ -2,14 +2,22 @@ rules_version = '2';
 
 // Lab Ledger — Firestore Security Rules
 //
-// Simple model: any signed-in Firebase Auth user has full access. There is
-// no separate profile document and no roles — Firebase Auth is the only
-// source of truth for "is this person allowed in".
+// Two kinds of signed-in user:
 //
-// Stock is NEVER written directly by a client except through the atomic
-// transaction in TransactionRepository.record(), which writes
-// /chemicals/{id} and /transactions/{id} together — these rules require
-// that pairing.
+//   STAFF   — real Firebase Auth accounts (email + password) created ahead of time for the
+//             laboratory. They keep exactly the access they always had.
+//
+//   CLIENTS — visitors of the Client Portal. They sign in ANONYMOUSLY (no account, no
+//             password). They may READ the catalogue (folders and chemicals, including the
+//             live available quantity) and CREATE order requests. Nothing else:
+//             no folder / chemical edits, no stock changes, no ledger access, and no
+//             reading, editing or deleting of orders (their own included).
+//
+// Stock is NEVER written directly by a client except through the atomic transaction in
+// TransactionRepository.record(), which writes /chemicals/{id} and /transactions/{id}
+// together — these rules require that pairing.
+//
+// An order is only a REQUEST. Creating one never changes stock.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -17,29 +25,34 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Anonymous (client portal) sessions are signed in but are never staff.
+    function isStaff() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
     // ---------------------------------------------------------------------
     // categories/{categoryId}  — folders
     // ---------------------------------------------------------------------
     match /categories/{categoryId} {
-      allow read: if signedIn();
-      allow create, update, delete: if signedIn();
+      allow read: if signedIn();                       // staff + client portal
+      allow create, update, delete: if isStaff();
     }
 
     // ---------------------------------------------------------------------
     // chemicals/{chemicalId} — chemical files
     // ---------------------------------------------------------------------
     match /chemicals/{chemicalId} {
-      allow read: if signedIn();
+      allow read: if signedIn();                       // staff + client portal
 
       // Creation may include an opening-balance stock figure, but it must
       // never be negative.
-      allow create: if signedIn() && request.resource.data.currentStock >= 0;
+      allow create: if isStaff() && request.resource.data.currentStock >= 0;
 
       // Metadata-only edit: currentStock, lastTransactionId, lastEntryAt and
       // lastEntryDelta must be untouched. Stock changes are only allowed via
       // the paired transaction write below (matched by lastTransactionId
       // pointing at a transaction this same request creates).
-      allow update: if signedIn() && (
+      allow update: if isStaff() && (
         (
           request.resource.data.currentStock == resource.data.currentStock &&
           request.resource.data.lastTransactionId == resource.data.lastTransactionId
@@ -56,20 +69,64 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
-    // transactions/{transactionId} — the immutable ledger
+    // transactions/{transactionId} — the immutable ledger (staff only)
+    // It records student names and IDs, so the client portal cannot read it.
     // ---------------------------------------------------------------------
     match /transactions/{transactionId} {
-      allow read: if signedIn();
+      allow read: if isStaff();
 
       // Must be attributed to the actor making the request, and must
       // reference a chemical that actually exists.
-      allow create: if signedIn()
+      allow create: if isStaff()
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.id == transactionId
         && existsAfter(/databases/$(database)/documents/chemicals/$(request.resource.data.chemicalId));
 
       // Immutable audit trail: no client-side edits or deletes, ever.
       allow update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // orders/{orderId} — chemical requests from the client portal
+    // ---------------------------------------------------------------------
+    // Free text must contain at least one non-space character and stay under [max] chars.
+    function nonBlank(value, max) {
+      return value is string && value.size() <= max && value.matches('.*\\S.*');
+    }
+
+    function validNewOrder(orderId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['id', 'clientName', 'clientId', 'supervisorName', 'items',
+                               'itemCount', 'status', 'clientUid', 'createdAt'])
+        && d.keys().hasAll(['id', 'clientName', 'clientId', 'supervisorName', 'items',
+                            'itemCount', 'status', 'clientUid', 'createdAt'])
+        && orderId.matches('LAB-[A-HJ-NP-Z2-9]{8}')    // same alphabet OrderRepository.newOrderId uses
+        && d.id == orderId
+        && d.clientUid == request.auth.uid              // the order belongs to the session that sent it
+        && d.status == 'Pending'                        // a client can only ever ask, never self-approve
+        && d.createdAt == request.time                  // server clock, not the client's
+        && nonBlank(d.clientName, 120)
+        && nonBlank(d.clientId, 60)
+        && nonBlank(d.supervisorName, 120)
+        && d.items is list
+        && d.items.size() >= 1
+        && d.items.size() <= 50
+        && d.itemCount is int
+        && d.itemCount == d.items.size();
+    }
+
+    match /orders/{orderId} {
+      // The only write a client can make anywhere in the database. Create-only: an existing
+      // order can never be overwritten, so one client cannot alter another's request.
+      allow create: if signedIn() && validNewOrder(orderId);
+
+      // Staff review orders and may update their processing fields only; the client's
+      // original request (name, ID, supervisor, items) stays as submitted.
+      allow read: if isStaff();
+      allow update: if isStaff()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'updatedAt', 'handledBy', 'handledByName', 'staffNote']);
+      allow delete: if false;
     }
   }
 }

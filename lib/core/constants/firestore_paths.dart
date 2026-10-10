@@ -5,6 +5,10 @@ class Col {
   static const categories = 'categories';
   static const chemicals = 'chemicals';
   static const transactions = 'transactions';
+
+  /// Chemical requests submitted from the client portal. Created by clients,
+  /// processed by laboratory staff; never touches stock by itself.
+  static const orders = 'orders';
 }
 
 /// Standard folders offered when a lab starts with an empty archive.
