@@ -23,7 +23,7 @@ jobs:
       - run: flutter test
 
       # The portal has its own entry point; the lab/admin app (lib/main.dart) is not published.
-      - run: flutter build web --release -t lib/main_client.dart
+      - run: flutter build web --release
 
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
