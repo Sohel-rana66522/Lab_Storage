@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab Ledger — Order Approval Workflow</title>
+<style>
+  :root {
+    --surface: #FAF8FF; --card: #FFFFFF; --low: #F2F3FF; --container: #EAEDFF;
+    --ink: #131B2E; --muted: #3E4947; --line: #E2E8F0;
+    --primary: #005C55; --primary-2: #0F766E; --accent: #006399;
+    --warn-bg: #FEF3C7; --warn: #92400E; --ok-bg: #D1FAE5; --ok: #065F46;
+    --err-bg: #FFDAD6; --err: #93000A;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface); color: var(--ink);
+    font: 15px/1.6 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 28px; letter-spacing: -.02em; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 15px; margin: 20px 0 4px; }
+  p { margin: 8px 0; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border-radius: 12px; padding: 16px 18px; margin: 12px 0;
+    box-shadow: 0 1px 2px rgba(15,23,42,.08); }
+  .note { border-radius: 10px; padding: 12px 14px; margin: 14px 0; }
+  .note.warn { background: var(--warn-bg); color: var(--warn); }
+  .note.ok { background: var(--ok-bg); color: var(--ok); }
+  .note.err { background: var(--err-bg); color: var(--err); }
+  code { font: 13px/1.4 "JetBrains Mono", ui-monospace, Consolas, monospace;
+    background: var(--container); padding: 1px 6px; border-radius: 4px; }
+  pre { background: #131B2E; color: #EEF0FF; border-radius: 10px; padding: 14px 16px; overflow-x: auto;
+    font: 13px/1.5 "JetBrains Mono", ui-monospace, Consolas, monospace; margin: 10px 0; }
+  pre code { background: none; padding: 0; color: inherit; }
+  ol, ul { padding-left: 22px; } li { margin: 4px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--card); border-radius: 10px;
+    overflow: hidden; box-shadow: 0 1px 2px rgba(15,23,42,.08); margin: 10px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--low); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  .flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 12px 0; }
+  .flow span { background: var(--container); border-radius: 8px; padding: 4px 10px; font-size: 13px; }
+  .flow i { color: var(--muted); font-style: normal; }
+  @media (max-width: 560px) { main { padding: 20px 14px 48px; } h1 { font-size: 24px; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Order approval workflow</h1>
+<p class="sub">Client Portal order &rarr; Pending in the laboratory app &rarr; admin approves or rejects &rarr; stock and ledger update atomically &rarr; client sees the status.</p>
+
+<div class="note err">
+  <strong>Not compiled, not run, not tested.</strong> The environment this was written in has no Flutter/Dart SDK, and the Firebase Emulator
+  could not be downloaded (<code>storage.googleapis.com</code> is blocked there). Nothing below has been executed.
+  The Dart tests and emulator rules tests are written but <strong>unrun</strong>. Please run section 7 before relying on this.
+</div>
+
+<div class="flow">
+  <span>Client submits (Pending)</span><i>&rarr;</i><span>Orders &rarr; Pending</span><i>&rarr;</i>
+  <span>Admin reviews</span><i>&rarr;</i><span>Approve / Reject</span><i>&rarr;</i><span>Client: My Orders</span>
+</div>
+
+<h2>1. One-time setup (required)</h2>
+<ol>
+  <li><strong>Create at least one admin.</strong> In the Firebase console &rarr; Firestore, create a document <code>users/&lt;the admin's Auth UID&gt;</code> with the string field <code>role</code> = <code>ADMIN</code>
+    (this is the existing <code>UserRole.admin</code> value). The UID is under Authentication &rarr; Users. Nobody can write <code>users</code> from the app; roles are granted only in the console.
+    Without this, staff can <em>see</em> orders but Approve / Reject are hidden and refused.</li>
+  <li><strong>Deploy the new rules</strong> (they are required: the old rules do not allow approval).</li>
+  <li><strong>Recommended:</strong> in Authentication &rarr; Settings &rarr; User actions, turn <strong>off</strong> "Enable create (sign-up)". See section 5, caveat 1.</li>
+</ol>
+<pre><code>firebase deploy --only firestore:rules
+# no Cloud Functions and no new indexes are needed</code></pre>
+
+<h2>2. How approval works</h2>
+<p><code>OrderAdminRepository.approve()</code> runs ONE Firestore transaction:</p>
+<ol>
+  <li>Reads the order. Not found &rarr; error. Already <code>Approved</code> &rarr; stops and writes nothing. <code>Rejected</code> &rarr; error.</li>
+  <li>Reads <code>users/{uid}</code> and requires <code>role == ADMIN</code>.</li>
+  <li>Reads <strong>every</strong> requested chemical by its real document id (the order only keeps a name/formula snapshot).</li>
+  <li>Validates <strong>all</strong> items with <code>TransactionRepository.planEntry()</code>: chemical exists, unit compatible, quantity &gt; 0, enough stock (the same code manual entries use, units converted, never negative). If any item fails, an error listing every problem is thrown <em>before any write</em>.</li>
+  <li>Writes, together: for each item the chemical's new <code>currentStock</code> (<code>new = current &minus; issued</code>) plus one ledger entry of the <strong>existing</strong> usage type <code>OUT</code> (via <code>TransactionRepository.stageEntry()</code>, the same writer manual entries use), then the order: <code>status=Approved</code>, <code>approvedAt</code> (server time), <code>approvedBy</code> (uid), <code>approvedByName</code>, <code>transactionIds</code>.</li>
+</ol>
+<p>Each ledger entry carries <code>orderId</code>, the client's name and ID (as <code>studentName</code>/<code>studentId</code>), purpose <code>Client order LAB-XXXXXXXX</code> and the supervisor in <code>remarks</code>, so it appears in Recents, chemical history and reports like any other usage.
+Success is reported to the admin only after the transaction commits.</p>
+
+<h3>Preventing duplicate deductions</h3>
+<ul>
+  <li>The status check and all writes are in one transaction; a concurrent approval is retried by Firestore, sees <code>Approved</code> and writes nothing.</li>
+  <li>Ledger ids are deterministic (<code>LAB-XXXXXXXX-1</code>, <code>-2</code>, &hellip;). A repeat can only target the same documents, and ledger entries cannot be updated (rules), so it cannot be written twice.</li>
+  <li>The rules allow an order-linked ledger entry only in the same request that moves that order from <code>Pending</code> to <code>Approved</code>, so no later request can add another.</li>
+  <li>The Approve button is disabled while a request runs, and a second approval of an approved order returns "already approved" without writing.</li>
+  <li>If the connection drops mid-commit, the app reads the order from the server before saying anything: approved &rarr; reports success; still Pending &rarr; "nothing was deducted, try again"; unreadable &rarr; "reload and check before retrying".</li>
+</ul>
+
+<h2>3. Files</h2>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><code>lib/repositories/order_admin_repository.dart</code></td><td><strong>New.</strong> Atomic approve, reject, live queries, admin check.</td></tr>
+  <tr><td><code>lib/providers/order_admin_provider.dart</code></td><td><strong>New.</strong> Orders stream, pending count, admin flag.</td></tr>
+  <tr><td><code>lib/screens/orders/orders_screen.dart</code>, <code>order_detail_screen.dart</code></td><td><strong>New.</strong> Pending / Approved / Rejected tabs, detail with live stock, confirm dialogs, optional rejection reason.</td></tr>
+  <tr><td><code>lib/widgets/order_status_pill.dart</code></td><td><strong>New.</strong> Shared status chip.</td></tr>
+  <tr><td><code>lib/client/pages/client_my_orders_page.dart</code></td><td><strong>New.</strong> Client's own orders with live status and rejection reason.</td></tr>
+  <tr><td><code>lib/repositories/transaction_repository.dart</code></td><td>Stock maths extracted from <code>record()</code> into <code>planEntry()</code> / <code>stageEntry()</code>. Behaviour of manual entries is meant to be unchanged (same checks, same messages).</td></tr>
+  <tr><td><code>lib/models/transaction_model.dart</code></td><td>Optional <code>orderId</code>.</td></tr>
+  <tr><td><code>lib/client/models/order_model.dart</code></td><td>Approved/Rejected statuses and processing fields.</td></tr>
+  <tr><td><code>lib/client/repositories/order_repository.dart</code>, <code>providers/order_provider.dart</code></td><td><code>watchMine()</code>, <code>myOrdersProvider</code>; item cap 50 &rarr; 7.</td></tr>
+  <tr><td><code>lib/core/router.dart</code>, <code>screens/home/app_shell.dart</code></td><td>Orders route and nav item with a pending badge.</td></tr>
+  <tr><td><code>lib/client/client_router.dart</code>, <code>pages/client_shell.dart</code>, <code>pages/client_order_success_page.dart</code></td><td>My Orders route and navigation.</td></tr>
+  <tr><td><code>firestore.rules</code></td><td>Admin role gate, order approval/rejection rules, client reads own orders.</td></tr>
+  <tr><td><code>test/order_approval_logic_test.dart</code>, <code>test_rules/</code></td><td><strong>New</strong> tests (unrun).</td></tr>
+  <tr><td><code>CLIENT_PORTAL.html</code></td><td>Updated for the new rules.</td></tr>
+</table>
+
+<h2>4. Firestore data</h2>
+<p><code>orders/{LAB-XXXXXXXX}</code> keeps the existing fields (<code>clientName, clientId, supervisorName, items[], itemCount, status, clientUid, createdAt</code>; each item keeps the name/formula/quantity/unit snapshot plus <code>chemicalId</code>)
+and gains, only when relevant: <code>approvedAt, approvedBy, approvedByName, transactionIds, rejectedAt, rejectedBy, rejectedByName, rejectionReason, updatedAt</code>.
+<code>transactions/{orderId}-{n}</code> gains <code>orderId</code>. <code>users/{uid}</code> (<code>role</code>) is read-only from the app. The existing naming (<code>handledBy</code>, <code>staffNote</code> in the old rules) was never written by any code and has been replaced.</p>
+
+<h2>5. Security</h2>
+<ul>
+  <li>Clients (anonymous sessions) can create a Pending order and read <strong>only their own</strong> orders. They cannot approve, reject, edit or delete any order, change stock, or touch the ledger.</li>
+  <li>Approve/Reject require <code>users/{uid}.role == 'ADMIN'</code>, enforced in the rules, not just by hiding buttons. <code>approvedBy</code>/<code>rejectedBy</code> must equal the caller's uid; times must be server time; only the listed fields may change; <code>Approved</code> and <code>Rejected</code> are final.</li>
+  <li>Order-linked ledger entries need an admin, type <code>OUT</code>, id <code>&lt;orderId&gt;-n</code> and the order moving Pending &rarr; Approved in the same request.</li>
+  <li><strong>No Cloud Function was added.</strong> The project is on the free plan and already relies on rules plus Firestore transactions; all privileged writes are done by signed-in staff whom the rules check. A Cloud Function would remove the item cap below but needs the Blaze plan.</li>
+</ul>
+<div class="note warn">
+  <strong>Caveats you should know about</strong>
+  <ol>
+    <li><strong>Any non-anonymous account is still &ldquo;staff&rdquo;</strong> for everything except order approval (existing behaviour, unchanged so your manual workflow keeps working). If Email/Password sign-up is enabled in Firebase Authentication, anyone with your public web API key can create an account via the REST API and then edit stock and the ledger. Disable sign-up (setup step 3) and create accounts only in the console. Moving all staff access onto the admin role is a small further change if you want it.</li>
+    <li><strong>7 chemicals per order.</strong> Firestore allows 20 document lookups per commit in rules; an approval needs about 2 per item plus 3. This count was derived from the documentation, not verified on the emulator. The client cart, the approval code and the rules all enforce 7; keep them in step if you change it.</li>
+    <li>Rules can only spot-check the first and last ledger entry of an order (they cannot loop). The approval code writes all of them in the same transaction.</li>
+    <li>My Orders is tied to the anonymous session: another browser or cleared site data will not show earlier orders.</li>
+    <li>The Orders tab was added as a sixth bottom-navigation item on phones, which is tight on narrow screens.</li>
+  </ol>
+</div>
+
+<h2>6. Error handling</h2>
+<table>
+  <tr><th>Situation</th><th>What the admin sees</th></tr>
+  <tr><td>Insufficient stock / missing chemical / bad unit or quantity</td><td>A red message listing every failing item; nothing written, order stays Pending. The detail screen also warns <em>before</em> you press Approve.</td></tr>
+  <tr><td>Already approved / rejected</td><td>"Already approved &mdash; no stock was changed" / a clear refusal.</td></tr>
+  <tr><td>Order not found</td><td>Message, and an empty-state page.</td></tr>
+  <tr><td>Not an admin</td><td>Buttons hidden with an explanation; the transaction and rules also refuse.</td></tr>
+  <tr><td>Concurrent approval</td><td>The second attempt sees Approved (or is told the outcome); stock moves once.</td></tr>
+  <tr><td>Network / Firestore failure</td><td>Outcome is verified from the server before any message; no success message unless confirmed. Diagnostics go to <code>dart:developer</code> logs (<code>OrderAdminRepository</code>).</td></tr>
+</table>
+
+<h2>7. Testing</h2>
+<h3>Written, not run</h3>
+<ul>
+  <li><code>test/order_approval_logic_test.dart</code> &mdash; stock maths (deduct, exact depletion, never negative, unit conversion), order shape checks (duplicates, bad quantities, item cap), deterministic ledger ids. Run: <code>flutter test</code>.</li>
+  <li><code>test_rules/orders.rules.test.js</code> &mdash; rules against the Firestore Emulator: client submit/read-own/no-approve, admin approval commits everything, missing ledger refused, spoofed approver refused, non-admin refused, second and racing approvals refused, rejection leaves stock alone, final states, manual stock entry still works. Run: <code>cd test_rules &amp;&amp; npm install &amp;&amp; npm test</code> (needs Java 11+).</li>
+</ul>
+<h3>Not covered by any automated test</h3>
+<p>The Dart transaction itself (multi-item atomicity, insufficient stock across items, retry after a network failure) needs the Firebase emulator with the Flutter SDK; no Dart-side emulator test exists. Check these manually:</p>
+<ol>
+  <li>Submit an order as a client &rarr; it appears under Orders &rarr; Pending without a refresh.</li>
+  <li>Approve a 3-chemical order &rarr; three <code>OUT</code> entries appear in Recents with the order id; each chemical's stock dropped by the requested amount; the client's My Orders shows Approved.</li>
+  <li>Make one chemical short (record a usage first), then approve &rarr; error naming it; <strong>no</strong> chemical changed; order still Pending.</li>
+  <li>Double-click Approve; open the same order on two devices and approve on both &rarr; stock drops once.</li>
+  <li>Turn off Wi-Fi mid-approval &rarr; no success message; reload the order and confirm its true state.</li>
+  <li>Reject with and without a reason &rarr; no stock change; the client sees Rejected and the reason.</li>
+  <li>Sign in as a staff account with no <code>users</code> document &rarr; Approve/Reject hidden.</li>
+  <li>Record manual Add Stock and Record Usage &rarr; still work and chain balances correctly.</li>
+</ol>
+
+</main>
+</body>
+</html>

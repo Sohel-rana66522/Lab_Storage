@@ -20,7 +20,9 @@ class OrderRepository {
   CollectionReference<Map<String, dynamic>> get _col => _db.collection(Col.orders);
 
   // Keep these in step with firestore.rules.
-  static const maxItems = 50;
+  /// An approval writes ~2 documents per item inside one Firestore transaction whose rules
+  /// are limited to 20 document accesses (see firestore.rules), so orders are capped.
+  static const maxItems = 7;
   static const maxNameLength = 120;
   static const maxIdLength = 60;
 
@@ -33,6 +35,21 @@ class OrderRepository {
     final tail = List.generate(8, (_) => _alphabet[r.nextInt(_alphabet.length)]).join();
     return 'LAB-$tail';
   }
+
+  /// The orders placed by THIS portal session (matched on the anonymous uid), newest first.
+  /// The security rules only let a session read its own orders, so this is also the only
+  /// query that can succeed. Sorted here rather than with orderBy so no index is needed.
+  Stream<List<OrderModel>> watchMine(String uid) =>
+      _col.where('clientUid', isEqualTo: uid).snapshots().map((s) {
+        final list = s.docs.map(OrderModel.fromFirestore).toList();
+        list.sort((a, b) {
+          // A just-submitted order has no server timestamp yet; treat it as newest.
+          final at = a.createdAt ?? DateTime.now();
+          final bt = b.createdAt ?? DateTime.now();
+          return bt.compareTo(at);
+        });
+        return list;
+      });
 
   /// Validates the request against the CURRENT stock on the server, then saves it as a
   /// pending order. Throws [AppException] with a message that is safe to show.

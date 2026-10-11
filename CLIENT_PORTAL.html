@@ -142,10 +142,10 @@ as full-access staff, which would have given every anonymous visitor write acces
   <tr><td><code>categories</code></td><td>Read</td><td>Read, create, update, delete</td></tr>
   <tr><td><code>chemicals</code></td><td>Read (live <code>currentStock</code>)</td><td>As before (stock only changes through a paired ledger entry)</td></tr>
   <tr><td><code>transactions</code></td><td>No access (it contains student names)</td><td>As before</td></tr>
-  <tr><td><code>orders</code></td><td><strong>Create only</strong>, with strict shape checks</td><td>Read; update processing fields only (<code>status, updatedAt, handledBy, handledByName, staffNote</code>); no delete</td></tr>
+  <tr><td><code>orders</code></td><td><strong>Create</strong> (strict shape checks); <strong>read only the orders its own session placed</strong>; never update or delete</td><td>Read all. <strong>Admins</strong> (<code>users/{uid}.role == 'ADMIN'</code>) may move a Pending order to Approved or Rejected, once; no delete. See <code>SETUP.md</code> section 8</td></tr>
 </table>
 <p>An order is accepted only if: it has exactly the expected fields; the ID matches <code>LAB-XXXXXXXX</code> and the document id; <code>clientUid</code> equals the sender's uid;
-<code>status</code> is <code>Pending</code>; <code>createdAt</code> is the server time; the three text fields are non-blank and within length limits; and it has 1–50 items.
+<code>status</code> is <code>Pending</code>; <code>createdAt</code> is the server time; the three text fields are non-blank and within length limits; and it has 1–7 items (an approval is one Firestore transaction and the rules can verify only so many documents per commit).
 An existing order can never be overwritten, so one client cannot alter another's request.</p>
 
 <h3>Things to know</h3>
@@ -171,8 +171,8 @@ An existing order can never be overwritten, so one client cannot alter another's
 
 <h2>7. Not built (outside this request)</h2>
 <ul>
-  <li><strong>No screen for staff to see orders yet.</strong> Until one is added to the laboratory app, review orders in the Firebase console under <code>orders</code>. <code>OrderModel.fromFirestore</code> is ready for a future Orders screen.</li>
-  <li>Clients cannot look up an order after submitting it (they keep the order ID shown on screen).</li>
+  <li><strong>Orders are now processed in the laboratory app</strong> (Orders tab: Pending / Approved / Rejected). Approving an order issues the chemicals and deducts stock automatically. See <code>SETUP.md</code> section 8.</li>
+  <li>Clients see their orders under <strong>My Orders</strong>, but only those placed from the same browser session (the anonymous uid is the identity). Clearing site data or switching device loses that view; the order ID on the success page is the fallback reference.</li>
   <li>The order ID is the only reference; there are no emails or notifications.</li>
 </ul>
 
@@ -187,7 +187,7 @@ An existing order can never be overwritten, so one client cannot alter another's
   <li>On the order page, submit with each field empty in turn: each shows an error and nothing is saved.</li>
   <li>Submit a valid order: the success page shows <code>LAB-XXXXXXXX</code>; a document appears in <code>orders</code> with status <code>Pending</code>; <strong>chemical stock is unchanged</strong>.</li>
   <li>Turn off the network and submit: a clear "no internet" message, and the cart is kept.</li>
-  <li>Rules check (Rules Playground or a script): an anonymous user <em>cannot</em> update a chemical, create a folder, create a transaction, read <code>orders</code> or edit an order, and a staff account still can do all its usual work.</li>
+  <li>Rules check (Rules Playground or a script): an anonymous user <em>cannot</em> update a chemical, create a folder, create a transaction, read someone else's order or edit any order, and a staff account still can do all its usual work.</li>
   <li>Resize the browser from phone to desktop width and check each page.</li>
 </ol>
 

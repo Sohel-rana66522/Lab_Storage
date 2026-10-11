@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'pages/client_cart_page.dart';
 import 'pages/client_folder_page.dart';
 import 'pages/client_home_page.dart';
+import 'pages/client_my_orders_page.dart';
 import 'pages/client_order_page.dart';
 import 'pages/client_order_success_page.dart';
 import 'pages/client_shell.dart';
@@ -18,6 +19,7 @@ import '../widgets/common_states.dart';
 ///   /cart                      cart
 ///   /order                     order submission
 ///   /order-success/:orderId    confirmation
+///   /orders                    my orders and their status
 final clientRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
@@ -44,6 +46,7 @@ final clientRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(path: '/cart', builder: (_, __) => const ClientCartPage()),
           GoRoute(path: '/order', builder: (_, __) => const ClientOrderPage()),
+          GoRoute(path: '/orders', builder: (_, __) => const ClientMyOrdersPage()),
           // A sibling of /order (not a child) so the order form is not left underneath it.
           GoRoute(
             path: '/order-success/:orderId',

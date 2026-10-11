@@ -9,6 +9,7 @@ import '../../core/utils/formatters.dart';
 import '../../core/utils/responsive.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chemical_provider.dart';
+import '../../providers/order_admin_provider.dart';
 import '../transactions/entry_sheet.dart';
 
 class _Dest {
@@ -20,6 +21,7 @@ class _Dest {
 
 const _dests = <_Dest>[
   _Dest('/folders', 'Folders', Icons.folder),
+  _Dest('/orders', 'Orders', Icons.inbox_outlined),
   _Dest('/recents', 'Recents', Icons.history),
   _Dest('/low-stock', 'Low Stock', Icons.warning_amber_rounded),
   _Dest('/reports', 'Reports', Icons.summarize_outlined),
@@ -37,6 +39,7 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lowCount = ref.watch(lowStockProvider).valueOrNull?.length ?? 0;
+    final pendingOrders = ref.watch(pendingOrderCountProvider);
     final selected = _dests.indexWhere((d) => location.startsWith(d.path));
     final showFab = location == '/folders';
 
@@ -66,7 +69,8 @@ class AppShell extends ConsumerWidget {
             Expanded(child: child),
           ]),
         ),
-        bottomNavigationBar: _BottomBar(dests: _dests, selected: selected, lowCount: lowCount),
+        bottomNavigationBar: _BottomBar(
+            dests: _dests, selected: selected, lowCount: lowCount, pendingOrders: pendingOrders),
       );
     }
 
@@ -100,7 +104,9 @@ class AppShell extends ConsumerWidget {
                 NavigationRailDestination(
                   icon: d.path == '/low-stock' && lowCount > 0
                       ? Badge(label: Text('$lowCount'), child: Icon(d.icon))
-                      : Icon(d.icon),
+                      : d.path == '/orders' && pendingOrders > 0
+                          ? Badge(label: Text('$pendingOrders'), child: Icon(d.icon))
+                          : Icon(d.icon),
                   label: Text(d.label),
                 ),
             ],
@@ -120,6 +126,7 @@ class AppShell extends ConsumerWidget {
 }
 
 String _subtitleFor(String location) {
+  if (location.startsWith('/orders')) return 'Client Orders';
   if (location.startsWith('/recents')) return 'Recent Activity';
   if (location.startsWith('/low-stock')) return 'Low Stock';
   if (location.startsWith('/reports')) return 'Reports';
@@ -201,10 +208,16 @@ class _Header extends ConsumerWidget {
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({required this.dests, required this.selected, required this.lowCount});
+  const _BottomBar({
+    required this.dests,
+    required this.selected,
+    required this.lowCount,
+    required this.pendingOrders,
+  });
   final List<_Dest> dests;
   final int selected;
   final int lowCount;
+  final int pendingOrders;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -222,9 +235,10 @@ class _BottomBar extends StatelessWidget {
                   child: InkWell(
                     onTap: () => context.go(dests[i].path),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      dests[i].path == '/low-stock' && lowCount > 0
+                      (dests[i].path == '/low-stock' && lowCount > 0) ||
+                              (dests[i].path == '/orders' && pendingOrders > 0)
                           ? Badge(
-                              label: Text('$lowCount'),
+                              label: Text('${dests[i].path == '/orders' ? pendingOrders : lowCount}'),
                               child: Icon(dests[i].icon, size: 22, color: i == selected ? AppColors.primary : AppColors.onSurfaceVariant))
                           : Icon(dests[i].icon,
                               size: 22, color: i == selected ? AppColors.primary : AppColors.onSurfaceVariant),

@@ -26,6 +26,7 @@ void _openCart(BuildContext context, String location) {
 
 String _subtitleFor(String location) {
   if (location.startsWith('/order-success')) return 'Order Submitted';
+  if (location == '/orders') return 'My Orders';
   if (location == '/order') return 'Order Request';
   if (location.startsWith('/cart')) return 'My Chemical Cart';
   if (location.startsWith('/folder')) return 'Client Portal • Folder';
@@ -72,7 +73,7 @@ class ClientShell extends ConsumerWidget {
     }
 
     final extended = width >= Responsive.expandedMin;
-    final selected = _inCartFlow(location) ? 1 : 0;
+    final selected = _inCartFlow(location) ? 1 : (location == '/orders' ? 2 : 0);
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(
@@ -107,8 +108,14 @@ class ClientShell extends ConsumerWidget {
                     : const Icon(Icons.shopping_cart_outlined),
                 label: const Text('Cart'),
               ),
+              const NavigationRailDestination(
+                  icon: Icon(Icons.receipt_long_outlined), label: Text('My Orders')),
             ],
-            onDestinationSelected: (i) => i == 0 ? context.go('/') : _openCart(context, location),
+            onDestinationSelected: (i) => i == 0
+                ? context.go('/')
+                : i == 1
+                    ? _openCart(context, location)
+                    : context.go('/orders'),
           ),
           const VerticalDivider(width: 1, color: AppColors.hairline),
           Expanded(
@@ -172,6 +179,12 @@ class _Header extends ConsumerWidget {
             tooltip: 'Home',
             onPressed: () => context.go('/'),
             icon: const Icon(Icons.home_outlined, color: AppColors.onSurfaceVariant),
+          ),
+        if (location != '/orders')
+          IconButton(
+            tooltip: 'My Orders',
+            onPressed: () => context.go('/orders'),
+            icon: const Icon(Icons.receipt_long_outlined, color: AppColors.onSurfaceVariant),
           ),
         IconButton(
           tooltip: 'Cart',

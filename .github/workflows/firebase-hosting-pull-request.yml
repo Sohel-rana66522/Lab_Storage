@@ -1,0 +1,31 @@
+# Builds every pull request and publishes a temporary preview URL (posted as a PR comment).
+name: Preview Client Portal (pull request)
+
+on: pull_request
+
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  build_and_preview:
+    # Fork PRs cannot read repository secrets, so only preview PRs from this repo.
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build web --release -t lib/main_client.dart
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ILET_LAB_D1712 }}
+          projectId: ilet-lab-d1712

@@ -66,7 +66,7 @@ class ClientOrderSuccessPage extends StatelessWidget {
                 ]),
               ),
               const SizedBox(height: 16),
-              Text('Please contact your supervisor/laboratory staff for further processing.',
+              Text('Track the status of this request under My Orders.',
                   textAlign: TextAlign.center, style: AppText.bodyMd),
               const SizedBox(height: 4),
               Text('This is a request only. No chemicals have been issued yet.',
@@ -74,6 +74,12 @@ class ClientOrderSuccessPage extends StatelessWidget {
                   style: AppText.bodySm.copyWith(color: AppColors.onSurfaceVariant)),
               const SizedBox(height: 20),
               FilledButton.icon(
+                onPressed: () => context.go('/orders'),
+                icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                label: const Text('View My Orders'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
                 onPressed: () => context.go('/'),
                 icon: const Icon(Icons.home_outlined, size: 18),
                 label: const Text('Back to Home'),

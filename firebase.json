@@ -1,1 +1,33 @@
-{"firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"},"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"ilet-lab-d1712","configurations":{"android":"1:826506390574:android:b590fab1266ba4e4b983bf","web":"1:826506390574:web:a76af4d79a223ab3b983bf"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": "y",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "ilet-lab-d1712",
+          "configurations": {
+            "android": "1:826506390574:android:b590fab1266ba4e4b983bf",
+            "web": "1:826506390574:web:a76af4d79a223ab3b983bf"
+          }
+        }
+      }
+    }
+  }
+}

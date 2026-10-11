@@ -1,0 +1,33 @@
+# Deploys the Lab Ledger CLIENT PORTAL to the live Firebase Hosting site
+# whenever something is pushed to main.
+name: Deploy Client Portal (live)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # Remove this step if you don't want failing tests to block a deploy.
+      - run: flutter test
+
+      # The portal has its own entry point; the lab/admin app (lib/main.dart) is not published.
+      - run: flutter build web --release -t lib/main_client.dart
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ILET_LAB_D1712 }}
+          channelId: live
+          projectId: ilet-lab-d1712

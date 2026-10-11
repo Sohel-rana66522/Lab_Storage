@@ -1,10 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Order lifecycle. The portal only ever creates [pending] orders; the laboratory
-/// decides what happens next.
+/// Order lifecycle. The portal only ever creates [pending] orders; laboratory admins move
+/// them to [approved] or [rejected]. Both of those are final.
 class OrderStatus {
   OrderStatus._();
   static const pending = 'Pending';
+  static const approved = 'Approved';
+  static const rejected = 'Rejected';
+
+  static const all = <String>[pending, approved, rejected];
 }
 
 /// One requested chemical inside an order. It is a snapshot taken at submission time:
@@ -81,6 +85,14 @@ class OrderModel {
     required this.clientUid,
     this.status = OrderStatus.pending,
     this.createdAt,
+    this.approvedAt,
+    this.approvedBy,
+    this.approvedByName,
+    this.rejectedAt,
+    this.rejectedBy,
+    this.rejectedByName,
+    this.rejectionReason,
+    this.transactionIds = const [],
   });
 
   /// Also the document id, e.g. `LAB-7K3MQ9XP`.
@@ -94,6 +106,23 @@ class OrderModel {
   final String clientUid;
   final String status;
   final DateTime? createdAt;
+
+  // Processing metadata. Written only by a laboratory admin, and only once.
+  final DateTime? approvedAt;
+  final String? approvedBy;
+  final String? approvedByName;
+  final DateTime? rejectedAt;
+  final String? rejectedBy;
+  final String? rejectedByName;
+  final String? rejectionReason;
+
+  /// Ids of the ledger entries (`transactions/{id}`) this order generated when approved,
+  /// one per item and in item order.
+  final List<String> transactionIds;
+
+  bool get isPending => status == OrderStatus.pending;
+  bool get isApproved => status == OrderStatus.approved;
+  bool get isRejected => status == OrderStatus.rejected;
 
   /// The exact set of fields the security rules accept for a new order.
   Map<String, dynamic> toFirestore() => {
@@ -122,6 +151,14 @@ class OrderModel {
       clientUid: (d['clientUid'] as String?) ?? '',
       status: (d['status'] as String?) ?? OrderStatus.pending,
       createdAt: (d['createdAt'] as Timestamp?)?.toDate(),
+      approvedAt: (d['approvedAt'] as Timestamp?)?.toDate(),
+      approvedBy: d['approvedBy'] as String?,
+      approvedByName: d['approvedByName'] as String?,
+      rejectedAt: (d['rejectedAt'] as Timestamp?)?.toDate(),
+      rejectedBy: d['rejectedBy'] as String?,
+      rejectedByName: d['rejectedByName'] as String?,
+      rejectionReason: d['rejectionReason'] as String?,
+      transactionIds: ((d['transactionIds'] as List?) ?? const []).whereType<String>().toList(),
     );
   }
 }

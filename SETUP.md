@@ -108,3 +108,10 @@ Stock only ever changes inside `TransactionRepository.record()`, which uses a si
 Firestore transaction to re-read the chemical, validate the quantity, block negative stock,
 and write the new balance and the ledger entry atomically — so two people editing
 the same chemical at once can never corrupt the balance.
+
+## Client orders and approval
+
+Client Portal orders are approved or rejected in the laboratory app (Orders tab). Approval
+atomically deducts stock and writes the usage ledger entries. **Before using it you must
+create an admin and deploy the rules** — see `ORDER_WORKFLOW.html` for setup, security notes,
+limits (7 chemicals per order) and the test plan.
