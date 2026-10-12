@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -62,6 +63,16 @@ class MenuScreen extends ConsumerWidget {
                 Text(user.email ?? '', style: AppText.bodySm.copyWith(color: AppColors.onSurfaceVariant)),
               ]),
             ),
+          ]),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: AppDeco.card(),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Column(children: [
+            tile(Icons.warning_amber_rounded, 'Low Stock', onTap: () => context.go('/low-stock')),
+            const Divider(height: 1, color: AppColors.hairline),
+            tile(Icons.summarize_outlined, 'Reports', onTap: () => context.go('/reports')),
           ]),
         ),
         const SizedBox(height: 16),

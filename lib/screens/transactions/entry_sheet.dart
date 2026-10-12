@@ -150,8 +150,8 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
   final _qty = TextEditingController();
   final _studentName = TextEditingController();
   final _studentId = TextEditingController();
-  final _bench = TextEditingController();
-  final _purpose = TextEditingController();
+  final _batch = TextEditingController();
+  final _supervisor = TextEditingController();
   final _supplier = TextEditingController();
   final _reference = TextEditingController();
   final _remarks = TextEditingController();
@@ -164,7 +164,7 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
 
   @override
   void dispose() {
-    for (final c in [_qty, _studentName, _studentId, _bench, _purpose, _supplier, _reference, _remarks]) {
+    for (final c in [_qty, _studentName, _studentId, _batch, _supervisor, _supplier, _reference, _remarks]) {
       c.dispose();
     }
     super.dispose();
@@ -191,11 +191,12 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
             date: _date,
             studentName: _studentName.text,
             studentId: _studentId.text,
-            labBench: _bench.text,
-            purpose: _purpose.text,
+            purpose: _isOut ? 'Batch: ${_batch.text.trim()}' : null,
             supplier: _supplier.text,
             referenceNumber: _reference.text,
-            remarks: _remarks.text,
+            remarks: _isOut
+                ? (_supervisor.text.trim().isEmpty ? null : 'Supervisor: ${_supervisor.text.trim()}')
+                : _remarks.text,
           );
       if (!mounted) return;
       Navigator.pop(context);
@@ -446,10 +447,10 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
   }
 
   List<Widget> _usageFields() => [
-        Text('Student / Recipient', style: AppText.titleSm),
+        Text('Student Information', style: AppText.titleSm),
         const SizedBox(height: 8),
         LabTextField(
-          label: 'Student Full Name',
+          label: 'Student Name',
           controller: _studentName,
           required: true,
           textInputAction: TextInputAction.next,
@@ -457,21 +458,31 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
         ),
         const SizedBox(height: 12),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: LabTextField(label: 'Student ID / Roll', controller: _studentId, mono: true)),
+          Expanded(
+            child: LabTextField(
+              label: 'ID',
+              controller: _studentId,
+              mono: true,
+              textInputAction: TextInputAction.next,
+            ),
+          ),
           const SizedBox(width: 12),
-          Expanded(child: LabTextField(label: 'Lab Station / Bench', controller: _bench, mono: true)),
+          Expanded(
+            child: LabTextField(
+              label: 'Batch',
+              controller: _batch,
+              required: true,
+              mono: true,
+              textInputAction: TextInputAction.next,
+              validator: (v) => (v ?? '').trim().isEmpty ? 'Batch is required' : null,
+            ),
+          ),
         ]),
-        const SizedBox(height: 16),
-        Text('Experimental Context', style: AppText.titleSm),
-        const SizedBox(height: 8),
-        LabTextField(
-          label: 'Purpose / Experiment',
-          controller: _purpose,
-          required: true,
-          validator: (v) => (v ?? '').trim().isEmpty ? 'Purpose is required' : null,
-        ),
         const SizedBox(height: 12),
-        LabTextField(label: 'Remarks', controller: _remarks, maxLines: 2),
+        LabTextField(
+          label: 'Supervisor Name',
+          controller: _supervisor,
+        ),
       ];
 
   List<Widget> _stockFields() => [

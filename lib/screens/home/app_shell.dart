@@ -8,7 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/responsive.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/chemical_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../providers/order_admin_provider.dart';
 import '../transactions/entry_sheet.dart';
 
@@ -23,8 +23,6 @@ const _dests = <_Dest>[
   _Dest('/folders', 'Folders', Icons.folder),
   _Dest('/orders', 'Orders', Icons.inbox_outlined),
   _Dest('/recents', 'Recents', Icons.history),
-  _Dest('/low-stock', 'Low Stock', Icons.warning_amber_rounded),
-  _Dest('/reports', 'Reports', Icons.summarize_outlined),
   _Dest('/menu', 'Menu', Icons.tune),
 ];
 
@@ -38,9 +36,14 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lowCount = ref.watch(lowStockProvider).valueOrNull?.length ?? 0;
     final pendingOrders = ref.watch(pendingOrderCountProvider);
-    final selected = _dests.indexWhere((d) => location.startsWith(d.path));
+    // Low Stock, Reports and Notifications live under Menu, so Menu stays highlighted there.
+    final underMenu = location.startsWith('/low-stock') ||
+        location.startsWith('/reports') ||
+        location.startsWith('/notifications');
+    final selected = underMenu
+        ? _dests.indexWhere((d) => d.path == '/menu')
+        : _dests.indexWhere((d) => location.startsWith(d.path));
     final showFab = location == '/folders';
 
     final fab = showFab
@@ -65,12 +68,11 @@ class AppShell extends ConsumerWidget {
         body: SafeArea(
           bottom: false,
           child: Column(children: [
-            _Header(location: location, showBrand: true, lowCount: lowCount),
+            _Header(location: location, showBrand: true),
             Expanded(child: child),
           ]),
         ),
-        bottomNavigationBar: _BottomBar(
-            dests: _dests, selected: selected, lowCount: lowCount, pendingOrders: pendingOrders),
+        bottomNavigationBar: _BottomBar(dests: _dests, selected: selected, pendingOrders: pendingOrders),
       );
     }
 
@@ -102,11 +104,9 @@ class AppShell extends ConsumerWidget {
             destinations: [
               for (final d in _dests)
                 NavigationRailDestination(
-                  icon: d.path == '/low-stock' && lowCount > 0
-                      ? Badge(label: Text('$lowCount'), child: Icon(d.icon))
-                      : d.path == '/orders' && pendingOrders > 0
-                          ? Badge(label: Text('$pendingOrders'), child: Icon(d.icon))
-                          : Icon(d.icon),
+                  icon: d.path == '/orders' && pendingOrders > 0
+                      ? Badge(label: Text('$pendingOrders'), child: Icon(d.icon))
+                      : Icon(d.icon),
                   label: Text(d.label),
                 ),
             ],
@@ -115,7 +115,7 @@ class AppShell extends ConsumerWidget {
           const VerticalDivider(width: 1, color: AppColors.hairline),
           Expanded(
             child: Column(children: [
-              _Header(location: location, showBrand: false, lowCount: lowCount),
+              _Header(location: location, showBrand: false),
               Expanded(child: child),
             ]),
           ),
@@ -130,19 +130,20 @@ String _subtitleFor(String location) {
   if (location.startsWith('/recents')) return 'Recent Activity';
   if (location.startsWith('/low-stock')) return 'Low Stock';
   if (location.startsWith('/reports')) return 'Reports';
+  if (location.startsWith('/notifications')) return 'Notifications';
   if (location.startsWith('/menu')) return 'Menu';
   if (location.startsWith('/search')) return 'Search';
   return 'Chemical Records • Folders';
 }
 
 class _Header extends ConsumerWidget {
-  const _Header({required this.location, required this.showBrand, required this.lowCount});
+  const _Header({required this.location, required this.showBrand});
   final String location;
   final bool showBrand;
-  final int lowCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final notificationCount = ref.watch(notificationBadgeCountProvider);
     final user = ref.watch(currentUserProvider);
     final initials = user == null ? '?' : Fmt.initials(Fmt.accountName(user));
     return Container(
@@ -173,11 +174,11 @@ class _Header extends ConsumerWidget {
             onPressed: () => context.go('/search'),
             icon: const Icon(Icons.search, color: AppColors.onSurfaceVariant)),
         IconButton(
-          tooltip: 'Low stock',
-          onPressed: () => context.go('/low-stock'),
+          tooltip: 'Notifications',
+          onPressed: () => context.go('/notifications'),
           icon: Stack(clipBehavior: Clip.none, children: [
             const Icon(Icons.notifications_none, color: AppColors.onSurfaceVariant),
-            if (lowCount > 0)
+            if (notificationCount > 0)
               Positioned(
                 right: 0,
                 top: 0,
@@ -211,12 +212,10 @@ class _BottomBar extends StatelessWidget {
   const _BottomBar({
     required this.dests,
     required this.selected,
-    required this.lowCount,
     required this.pendingOrders,
   });
   final List<_Dest> dests;
   final int selected;
-  final int lowCount;
   final int pendingOrders;
 
   @override
@@ -235,10 +234,9 @@ class _BottomBar extends StatelessWidget {
                   child: InkWell(
                     onTap: () => context.go(dests[i].path),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      (dests[i].path == '/low-stock' && lowCount > 0) ||
-                              (dests[i].path == '/orders' && pendingOrders > 0)
+                      dests[i].path == '/orders' && pendingOrders > 0
                           ? Badge(
-                              label: Text('${dests[i].path == '/orders' ? pendingOrders : lowCount}'),
+                              label: Text('$pendingOrders'),
                               child: Icon(dests[i].icon, size: 22, color: i == selected ? AppColors.primary : AppColors.onSurfaceVariant))
                           : Icon(dests[i].icon,
                               size: 22, color: i == selected ? AppColors.primary : AppColors.onSurfaceVariant),

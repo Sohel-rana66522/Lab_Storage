@@ -34,11 +34,7 @@ class _ChemicalFormScreenState extends ConsumerState<ChemicalFormScreen> {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _formula = TextEditingController();
-  final _cas = TextEditingController();
-  final _grade = TextEditingController();
   final _location = TextEditingController();
-  final _description = TextEditingController();
-  final _notes = TextEditingController();
   final _minimum = TextEditingController(text: '0');
   final _capacity = TextEditingController();
   final _initialStock = TextEditingController(text: '0');
@@ -61,11 +57,7 @@ class _ChemicalFormScreenState extends ConsumerState<ChemicalFormScreen> {
     for (final c in [
       _name,
       _formula,
-      _cas,
-      _grade,
       _location,
-      _description,
-      _notes,
       _minimum,
       _capacity,
       _initialStock,
@@ -80,11 +72,7 @@ class _ChemicalFormScreenState extends ConsumerState<ChemicalFormScreen> {
     _hydrated = true;
     _name.text = c.name;
     _formula.text = c.formula;
-    _cas.text = c.casNumber ?? '';
-    _grade.text = c.grade ?? '';
     _location.text = c.location ?? '';
-    _description.text = c.description ?? '';
-    _notes.text = c.notes ?? '';
     _minimum.text = Fmt.qty(c.minimumStock);
     _capacity.text = c.capacity == null ? '' : Fmt.qty(c.capacity!);
     _categoryId = c.categoryId;
@@ -113,10 +101,6 @@ class _ChemicalFormScreenState extends ConsumerState<ChemicalFormScreen> {
       unit: _unit,
       minimumStock: parseDecimal(_minimum.text) ?? 0,
       capacity: parseDecimal(_capacity.text),
-      description: _description.text.trim(),
-      notes: _notes.text.trim(),
-      casNumber: _cas.text.trim(),
-      grade: _grade.text.trim(),
       location: _location.text.trim(),
       hazardClass: _hazard,
     );
@@ -206,12 +190,6 @@ class _ChemicalFormScreenState extends ConsumerState<ChemicalFormScreen> {
             onChanged: (v) => setState(() => _categoryId = v),
           ),
           const SizedBox(height: 12),
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(child: LabTextField(label: 'CAS number', controller: _cas, mono: true)),
-            const SizedBox(width: 12),
-            Expanded(child: LabTextField(label: 'Grade', controller: _grade, hint: 'e.g. ACS Reagent')),
-          ]),
-          const SizedBox(height: 12),
           LabDropdown<String>(
             label: 'Hazard class',
             value: _hazard,
@@ -221,10 +199,6 @@ class _ChemicalFormScreenState extends ConsumerState<ChemicalFormScreen> {
           ),
           const SizedBox(height: 12),
           LabTextField(label: 'Storage location', controller: _location, hint: 'e.g. Room 3B / Cab 02'),
-          const SizedBox(height: 12),
-          LabTextField(label: 'Description', controller: _description, maxLines: 2),
-          const SizedBox(height: 12),
-          LabTextField(label: 'Handling notes', controller: _notes, maxLines: 2),
 
           const SizedBox(height: 24),
           Text('Stock & Unit', style: AppText.titleMd),

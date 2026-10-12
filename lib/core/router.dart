@@ -11,6 +11,7 @@ import '../screens/folders/folder_screen.dart';
 import '../screens/home/app_shell.dart';
 import '../screens/home/folders_screen.dart';
 import '../screens/home/search_screen.dart';
+import '../screens/notifications/notifications_screen.dart';
 import '../screens/orders/order_detail_screen.dart';
 import '../screens/orders/orders_screen.dart';
 import '../screens/reports/reports_screen.dart';
@@ -54,6 +55,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
           GoRoute(path: '/orders', builder: (_, __) => const OrdersScreen()),
           GoRoute(path: '/recents', builder: (_, __) => const RecentsScreen()),
+          GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
           GoRoute(path: '/low-stock', builder: (_, __) => const LowStockScreen()),
           GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
           GoRoute(path: '/menu', builder: (_, __) => const MenuScreen()),

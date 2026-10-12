@@ -171,17 +171,18 @@ class ChemicalDetailScreen extends ConsumerWidget {
   }
 
   String _csv(List<TransactionModel> list) => toCsv(
-        ['Date', 'Type', 'Description/Student', 'Added', 'Used', 'Balance', 'Recorded by'],
+        ['Date', 'Type', 'Student', 'Batch', 'Supervisor', 'Added', 'Used', 'Balance'],
         [
           for (final t in list)
             [
               Fmt.date(t.date),
               t.isIn ? 'IN' : 'OUT',
               t.isIn ? (t.isInitial ? 'Initial Stock' : (t.supplier ?? '')) : (t.studentName ?? ''),
+              TransactionTable.batchOf(t),
+              TransactionTable.supervisorOf(t),
               t.isIn ? Fmt.qty(t.quantity) : '',
               t.isIn ? '' : Fmt.qty(t.quantity),
               Fmt.qty(t.balanceAfter),
-              t.createdByName,
             ]
         ],
       );
