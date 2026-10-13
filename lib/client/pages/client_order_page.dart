@@ -15,6 +15,7 @@ import '../providers/client_cart_provider.dart';
 import '../providers/client_session_provider.dart';
 import '../providers/order_provider.dart';
 import '../repositories/order_repository.dart';
+import '../repositories/student_auth_repository.dart';
 import '../utils/client_errors.dart';
 import '../widgets/client_ui.dart';
 import '../widgets/order_summary.dart';
@@ -31,7 +32,8 @@ class _ClientOrderPageState extends ConsumerState<ClientOrderPage> {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _id = TextEditingController();
-  final _supervisor = TextEditingController();
+  final _batch = TextEditingController();
+  final _phone = TextEditingController();
 
   bool _busy = false;
   bool _slow = false;
@@ -46,6 +48,8 @@ class _ClientOrderPageState extends ConsumerState<ClientOrderPage> {
     if (profile != null) {
       _name.text = profile.displayName;
       _id.text = profile.studentId ?? '';
+      _batch.text = profile.batch ?? '';
+      _phone.text = profile.phone ?? '';
     }
   }
 
@@ -54,7 +58,8 @@ class _ClientOrderPageState extends ConsumerState<ClientOrderPage> {
     _slowTimer?.cancel();
     _name.dispose();
     _id.dispose();
-    _supervisor.dispose();
+    _batch.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
@@ -95,7 +100,8 @@ class _ClientOrderPageState extends ConsumerState<ClientOrderPage> {
         actor: user,
         clientName: _name.text,
         clientId: _id.text,
-        supervisorName: _supervisor.text,
+        clientBatch: _batch.text,
+        clientPhone: _phone.text,
         lines: lines,
       );
       router.go('/order-success/${order.id}');
@@ -184,14 +190,28 @@ class _ClientOrderPageState extends ConsumerState<ClientOrderPage> {
             ),
             const SizedBox(height: 12),
             LabTextField(
-              label: 'Supervisor Name',
-              controller: _supervisor,
+              label: 'Student Batch',
+              controller: _batch,
               required: true,
               enabled: !_busy,
+              textInputAction: TextInputAction.next,
+              inputFormatters: [LengthLimitingTextInputFormatter(OrderRepository.maxBatchLength)],
+              validator: StudentAuthRepository.validateBatch,
+            ),
+            const SizedBox(height: 12),
+            LabTextField(
+              label: 'Phone Number',
+              controller: _phone,
+              required: true,
+              enabled: !_busy,
+              keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.done,
-              inputFormatters: [LengthLimitingTextInputFormatter(OrderRepository.maxNameLength)],
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]')),
+                LengthLimitingTextInputFormatter(StudentAuthRepository.maxPhoneLength),
+              ],
               onSubmitted: (_) => _submit(),
-              validator: (v) => _required(v, 'Enter the supervisor name'),
+              validator: StudentAuthRepository.validatePhone,
             ),
           ]),
         ),

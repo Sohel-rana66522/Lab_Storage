@@ -22,6 +22,7 @@ class StudentAuthRepository {
   static const maxNameLength = 120;
   static const maxIdLength = 40;
   static const maxBatchLength = 30;
+  static const maxPhoneLength = 20;
 
   static final _idPattern = RegExp(r'^[A-Za-z0-9._-]+$');
 
@@ -59,6 +60,16 @@ class StudentAuthRepository {
     return null;
   }
 
+  /// Digits with an optional leading + (spaces and dashes allowed), 7-20 characters.
+  static String? validatePhone(String? v) {
+    final s = (v ?? '').trim();
+    if (s.isEmpty) return 'Enter your phone number';
+    if (s.length > maxPhoneLength || !RegExp(r'^\+?[0-9][0-9\s-]{5,}$').hasMatch(s)) {
+      return 'Enter a valid phone number';
+    }
+    return null;
+  }
+
   static void _check(String? error) {
     if (error != null) throw AppException(error);
   }
@@ -69,10 +80,12 @@ class StudentAuthRepository {
     required String name,
     required String studentId,
     required String batch,
+    required String phone,
   }) async {
     _check(validateName(name));
     _check(validateId(studentId));
     _check(validateBatch(batch));
+    _check(validatePhone(phone));
 
     final cleanName = _collapse(name);
     final id = studentId.trim();
@@ -99,6 +112,7 @@ class StudentAuthRepository {
         'role': UserRole.student.wire,
         'studentId': id,
         'batch': _collapse(batch),
+        'phone': phone.trim(),
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
@@ -143,6 +157,27 @@ class StudentAuthRepository {
       await _auth.signOut();
       rethrow;
     }
+  }
+
+  /// Edits the signed-in student's own profile. The Student ID is NOT editable: the login
+  /// account is derived from it, so changing it would orphan the account.
+  Future<void> updateProfile({
+    required String name,
+    required String batch,
+    required String phone,
+  }) async {
+    _check(validateName(name));
+    _check(validateBatch(batch));
+    _check(validatePhone(phone));
+
+    final user = _auth.currentUser;
+    if (user == null) throw AppException('Please log in again.');
+
+    await _db.collection(Col.users).doc(user.uid).update({
+      'displayName': _collapse(name),
+      'batch': _collapse(batch),
+      'phone': phone.trim(),
+    });
   }
 
   Future<void> signOut() => _auth.signOut();

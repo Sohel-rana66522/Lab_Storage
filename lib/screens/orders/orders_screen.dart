@@ -114,7 +114,7 @@ class _OrderCard extends StatelessWidget {
               ),
             ]),
             const SizedBox(height: 2),
-            Text('Supervisor: ${o.supervisorName}',
+            Text('Batch: ${o.clientBatch} · ${o.clientPhone}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppText.bodySm.copyWith(color: AppColors.onSurfaceVariant)),

@@ -26,6 +26,7 @@ void _openCart(BuildContext context, String location) {
 String _subtitleFor(String location) {
   if (location.startsWith('/order-success')) return 'Order Submitted';
   if (location == '/orders') return 'My Orders';
+  if (location == '/profile') return 'My Profile';
   if (location == '/order') return 'Order Request';
   if (location.startsWith('/cart')) return 'My Chemical Cart';
   if (location.startsWith('/folder')) return 'Client Portal • Folder';
@@ -194,6 +195,12 @@ class _Header extends ConsumerWidget {
             child: const Icon(Icons.shopping_cart_outlined, color: AppColors.onSurfaceVariant),
           ),
         ),
+        if (location != '/profile')
+          IconButton(
+            tooltip: 'My Profile',
+            onPressed: () => context.go('/profile'),
+            icon: const Icon(Icons.person_outline, color: AppColors.onSurfaceVariant),
+          ),
         IconButton(
           tooltip: 'Log out',
           onPressed: () => _logOut(ref),

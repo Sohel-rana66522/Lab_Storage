@@ -1,26 +1,17 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Student login - changes</title>
-<style>body{font:15px/1.5 system-ui,sans-serif;max-width:760px;margin:32px auto;padding:0 16px;color:#222}code{background:#f1f1f1;padding:1px 5px;border-radius:4px}td,th{border:1px solid #ddd;padding:6px 10px;text-align:left}table{border-collapse:collapse}</style></head><body>
-<h1>Client portal: student login &amp; sign-up</h1>
-<p>Unzip into the project root (same folder as <code>pubspec.yaml</code>) and overwrite when asked. Paths inside the zip match the repo.</p>
-<h2>Files</h2>
-<table><tr><th>Path</th><th></th></tr>
-<tr><td><code>lib/client/pages/client_auth_pages.dart</code></td><td>NEW - Login (name + student ID) and Sign up (name, student ID, batch) pages</td></tr>
-<tr><td><code>lib/client/repositories/student_auth_repository.dart</code></td><td>NEW - sign up / log in / log out logic</td></tr>
-<tr><td><code>lib/client/providers/client_session_provider.dart</code></td><td>Replaced anonymous session with student session + profile providers</td></tr>
-<tr><td><code>lib/client/client_router.dart</code></td><td>Added /login and /signup, redirects to login when not signed in</td></tr>
-<tr><td><code>lib/client/pages/client_shell.dart</code></td><td>Log out button; waits for the student profile</td></tr>
-<tr><td><code>lib/client/pages/client_order_page.dart</code></td><td>Name and ID pre-filled from the student's profile</td></tr>
-<tr><td><code>lib/client/utils/client_errors.dart</code></td><td>Message wording</td></tr>
-<tr><td><code>lib/models/user_model.dart</code></td><td>Added optional <code>batch</code> field</td></tr>
-<tr><td><code>firestore.rules</code></td><td>Students can create their own <code>users</code> profile; students are never treated as staff</td></tr></table>
-<h2>Before it works</h2>
-<ol>
-<li>Firebase Console &rarr; Authentication &rarr; Sign-in method: enable <b>Email/Password</b>.</li>
-<li>Deploy the rules: <code>firebase deploy --only firestore:rules</code> (sign-up fails with permission-denied until you do).</li>
-</ol>
-<h2>How it works</h2>
-<p>Each student gets a Firebase account with email <code>&lt;studentid&gt;@students.labledger.app</code> (derived from the Student ID). The profile is saved in <code>users/{uid}</code> with <code>displayName, studentId, batch, role: "STUDENT", email, uid, createdAt</code>. Login signs in by Student ID, then checks the typed name matches the saved name.</p>
+<!doctype html><html><head><meta charset="utf-8"><title>Student portal - changes (v3)</title>
+<style>body{font:15px/1.5 system-ui,sans-serif;max-width:760px;margin:32px auto;padding:0 16px;color:#222}code{background:#f1f1f1;padding:1px 5px;border-radius:4px}</style></head><body>
+<h1>Client portal: student login, phone, order form, profile</h1>
+<p>This zip contains <b>every</b> file changed so far. Unzip into the project root and overwrite. Paths match the repo.</p>
+<h2>This update: student profile page</h2>
+<ul>
+<li>New page <code>/profile</code> (person icon in the top bar). The student can edit <b>Name, Batch and Phone</b>. The Student ID is shown but locked.</li>
+<li><code>firestore.rules</code>: a student may update only <code>displayName</code>, <code>batch</code> and <code>phone</code> of their own profile. ID, email and role can never change.</li>
+<li>New file: <code>lib/client/pages/client_profile_page.dart</code>. Edited: <code>student_auth_repository.dart</code> (<code>updateProfile</code>), <code>client_router.dart</code>, <code>client_shell.dart</code>.</li>
+</ul>
+<h2>Deploy</h2>
+<ol><li><code>firebase deploy --only firestore:rules</code> (required)</li><li>Email/Password enabled in Firebase Authentication</li></ol>
 <h2>Know this</h2>
-<ul><li>There is no password: anyone who knows a Student ID and the matching name can log in as that student.</li>
-<li>Student IDs may use letters, numbers and <code>- . _</code> only.</li></ul>
+<ul><li>Why the ID is locked: the login account is built from the Student ID. Firebase cannot change that account's email without a real email verification, and these accounts have no real mailbox.</li>
+<li>If the name is changed, the student must type the new name at the next login.</li>
+<li>Past orders keep the name and phone they were placed with.</li></ul>
 </body></html>

@@ -10,6 +10,7 @@ import 'pages/client_folder_page.dart';
 import 'pages/client_home_page.dart';
 import 'pages/client_my_orders_page.dart';
 import 'pages/client_order_page.dart';
+import 'pages/client_profile_page.dart';
 import 'pages/client_order_success_page.dart';
 import 'pages/client_shell.dart';
 import 'providers/client_session_provider.dart';
@@ -19,13 +20,14 @@ import '../widgets/common_states.dart';
 /// no route to any laboratory screen: this app cannot navigate to the admin side at all.
 ///
 ///   /login                     student login (name + student ID)
-///   /signup                    student sign-up (name, student ID, batch)
+///   /signup                    student sign-up (name, student ID, batch, phone)
 ///   /                          home (folders)
 ///   /folder/:categoryId        chemicals in a folder
 ///   /cart                      cart
 ///   /order                     order submission
 ///   /order-success/:orderId    confirmation
 ///   /orders                    my orders and their status
+///   /profile                   student profile (edit name, batch, phone)
 final clientRouterProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.listen(authStateProvider, (_, __) => refresh.value++);
@@ -77,6 +79,7 @@ final clientRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/cart', builder: (_, __) => const ClientCartPage()),
           GoRoute(path: '/order', builder: (_, __) => const ClientOrderPage()),
           GoRoute(path: '/orders', builder: (_, __) => const ClientMyOrdersPage()),
+          GoRoute(path: '/profile', builder: (_, __) => const ClientProfilePage()),
           // A sibling of /order (not a child) so the order form is not left underneath it.
           GoRoute(
             path: '/order-success/:orderId',

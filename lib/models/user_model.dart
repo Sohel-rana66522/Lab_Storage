@@ -23,6 +23,7 @@ class UserModel {
     required this.role,
     this.studentId,
     this.batch,
+    this.phone,
     this.createdAt,
   });
 
@@ -32,6 +33,7 @@ class UserModel {
   final UserRole role;
   final String? studentId;
   final String? batch;
+  final String? phone;
   final DateTime? createdAt;
 
   bool get isStaff => role != UserRole.student;
@@ -49,6 +51,7 @@ class UserModel {
       role: UserRole.parse(d['role'] as String?),
       studentId: d['studentId'] as String?,
       batch: d['batch'] as String?,
+      phone: d['phone'] as String?,
       createdAt: (d['createdAt'] as Timestamp?)?.toDate(),
     );
   }
@@ -60,12 +63,13 @@ class UserModel {
         'role': role.wire,
         'studentId': studentId,
         'batch': batch,
+        'phone': phone,
         'createdAt': createdAt == null
             ? FieldValue.serverTimestamp()
             : Timestamp.fromDate(createdAt!),
       };
 
-  UserModel copyWith({String? displayName, UserRole? role, String? studentId, String? batch}) =>
+  UserModel copyWith({String? displayName, UserRole? role, String? studentId, String? batch, String? phone}) =>
       UserModel(
         uid: uid,
         email: email,
@@ -73,6 +77,7 @@ class UserModel {
         role: role ?? this.role,
         studentId: studentId ?? this.studentId,
         batch: batch ?? this.batch,
+        phone: phone ?? this.phone,
         createdAt: createdAt,
       );
 }

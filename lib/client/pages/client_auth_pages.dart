@@ -172,6 +172,7 @@ class _ClientSignupPageState extends ConsumerState<ClientSignupPage> {
   final _name = TextEditingController();
   final _id = TextEditingController();
   final _batch = TextEditingController();
+  final _phone = TextEditingController();
   bool _busy = false;
   String? _error;
 
@@ -180,6 +181,7 @@ class _ClientSignupPageState extends ConsumerState<ClientSignupPage> {
     _name.dispose();
     _id.dispose();
     _batch.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
@@ -193,7 +195,8 @@ class _ClientSignupPageState extends ConsumerState<ClientSignupPage> {
       _error = null;
     });
     try {
-      await repo.signUp(name: _name.text, studentId: _id.text, batch: _batch.text);
+      await repo.signUp(
+          name: _name.text, studentId: _id.text, batch: _batch.text, phone: _phone.text);
     } catch (e) {
       if (mounted) setState(() => _error = clientErrorMessage(e));
     } finally {
@@ -237,12 +240,26 @@ class _ClientSignupPageState extends ConsumerState<ClientSignupPage> {
               controller: _batch,
               required: true,
               enabled: !_busy,
-              textInputAction: TextInputAction.done,
+              textInputAction: TextInputAction.next,
               inputFormatters: [
                 LengthLimitingTextInputFormatter(StudentAuthRepository.maxBatchLength)
               ],
-              onSubmitted: (_) => _submit(),
               validator: StudentAuthRepository.validateBatch,
+            ),
+            const SizedBox(height: 12),
+            LabTextField(
+              label: 'Phone Number',
+              controller: _phone,
+              required: true,
+              enabled: !_busy,
+              keyboardType: TextInputType.phone,
+              textInputAction: TextInputAction.done,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]')),
+                LengthLimitingTextInputFormatter(StudentAuthRepository.maxPhoneLength),
+              ],
+              onSubmitted: (_) => _submit(),
+              validator: StudentAuthRepository.validatePhone,
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),

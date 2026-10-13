@@ -80,7 +80,8 @@ class OrderModel {
     required this.id,
     required this.clientName,
     required this.clientId,
-    required this.supervisorName,
+    required this.clientBatch,
+    required this.clientPhone,
     required this.items,
     required this.clientUid,
     this.status = OrderStatus.pending,
@@ -99,7 +100,8 @@ class OrderModel {
   final String id;
   final String clientName;
   final String clientId;
-  final String supervisorName;
+  final String clientBatch;
+  final String clientPhone;
   final List<OrderItem> items;
 
   /// Firebase Auth uid of the (anonymous) portal session that placed the order.
@@ -129,7 +131,8 @@ class OrderModel {
         'id': id,
         'clientName': clientName,
         'clientId': clientId,
-        'supervisorName': supervisorName,
+        'clientBatch': clientBatch,
+        'clientPhone': clientPhone,
         'items': items.map((i) => i.toMap()).toList(),
         'itemCount': items.length,
         'status': status,
@@ -143,7 +146,8 @@ class OrderModel {
       id: doc.id,
       clientName: (d['clientName'] as String?) ?? '',
       clientId: (d['clientId'] as String?) ?? '',
-      supervisorName: (d['supervisorName'] as String?) ?? '',
+      clientBatch: (d['clientBatch'] as String?) ?? '',
+      clientPhone: (d['clientPhone'] as String?) ?? '',
       items: ((d['items'] as List?) ?? const [])
           .whereType<Map>()
           .map((m) => OrderItem.fromMap(Map<String, dynamic>.from(m)))

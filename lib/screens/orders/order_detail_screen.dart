@@ -300,7 +300,8 @@ class _Header extends StatelessWidget {
         const SizedBox(height: 8),
         row('Client name', o.clientName),
         row('Client ID', o.clientId, mono: true),
-        row('Supervisor', o.supervisorName),
+        row('Batch', o.clientBatch),
+        row('Phone', o.clientPhone, mono: true),
         row('Submitted at', o.createdAt == null ? 'Just now' : Fmt.dateTime(o.createdAt!)),
         if (o.isApproved && o.approvedAt != null)
           row('Approved', '${Fmt.dateTime(o.approvedAt!)}${(o.approvedByName ?? '').isEmpty ? '' : ' by ${o.approvedByName}'}'),

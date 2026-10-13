@@ -10,6 +10,7 @@ import '../../models/category_model.dart';
 import '../../models/chemical_model.dart';
 import '../models/cart_line.dart';
 import '../models/order_model.dart';
+import 'student_auth_repository.dart';
 
 /// Creates client orders. This is the ONLY write the client portal performs, and it
 /// writes to `orders/` alone: stock and the transaction ledger are never touched.
@@ -25,6 +26,7 @@ class OrderRepository {
   static const maxItems = 7;
   static const maxNameLength = 120;
   static const maxIdLength = 60;
+  static const maxBatchLength = 30;
 
   /// No 0/O or 1/I so IDs read clearly when spoken or copied by hand.
   static const _alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -57,19 +59,26 @@ class OrderRepository {
     required User actor,
     required String clientName,
     required String clientId,
-    required String supervisorName,
+    required String clientBatch,
+    required String clientPhone,
     required List<CartLine> lines,
   }) async {
     final name = clientName.trim();
     final cid = clientId.trim();
-    final sup = supervisorName.trim();
+    final batch = clientBatch.trim();
+    final phone = clientPhone.trim();
 
     if (name.isEmpty) throw AppException('Please enter the student/client name.');
     if (cid.isEmpty) throw AppException('Please enter the student/client ID.');
-    if (sup.isEmpty) throw AppException('Please enter the supervisor name.');
-    if (name.length > maxNameLength || sup.length > maxNameLength) {
-      throw AppException('Names must be $maxNameLength characters or fewer.');
+    if (batch.isEmpty) throw AppException('Please enter the student batch.');
+    if (name.length > maxNameLength) {
+      throw AppException('The name must be $maxNameLength characters or fewer.');
     }
+    if (batch.length > maxBatchLength) {
+      throw AppException('The batch must be $maxBatchLength characters or fewer.');
+    }
+    final phoneError = StudentAuthRepository.validatePhone(phone);
+    if (phoneError != null) throw AppException(phoneError);
     if (cid.length > maxIdLength) {
       throw AppException('The ID must be $maxIdLength characters or fewer.');
     }
@@ -136,7 +145,8 @@ class OrderRepository {
       id: newOrderId(),
       clientName: name,
       clientId: cid,
-      supervisorName: sup,
+      clientBatch: batch,
+      clientPhone: phone,
       items: items,
       clientUid: actor.uid,
     );
