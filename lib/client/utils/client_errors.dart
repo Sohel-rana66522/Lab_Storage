@@ -8,13 +8,15 @@ import '../../core/utils/errors.dart';
 String clientErrorMessage(Object e) {
   // FirebaseAuthException is a FirebaseException, so test it first.
   if (e is FirebaseAuthException && e.code == 'operation-not-allowed') {
-    return 'The client portal is not switched on yet. The laboratory needs to enable '
-        'anonymous sign-in in Firebase Authentication.';
+    return 'Student sign-in is not switched on yet. The laboratory needs to enable '
+        'Email/Password sign-in in Firebase Authentication.';
   }
   if (e is FirebaseAuthException) {
     return e.code == 'network-request-failed'
         ? 'No internet connection. Check your network and try again.'
-        : 'Could not start a session. Please refresh the page and try again.';
+        : e.code == 'too-many-requests'
+            ? 'Too many attempts. Please wait a moment and try again.'
+            : 'Could not sign you in. Please refresh the page and try again.';
   }
   if (e is FirebaseException && e.code == 'permission-denied') {
     return 'The laboratory server did not accept this request. Please try again, '

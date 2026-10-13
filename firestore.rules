@@ -33,9 +33,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Anonymous (client portal) sessions are signed in but are never staff.
+    // Client-portal STUDENT accounts are email/password accounts whose email ends with the
+    // reserved domain below (StudentAuthRepository.emailDomain — keep in step).
+    function isStudent() {
+      return signedIn()
+        && request.auth.token.get('email', '').matches('.*@students\\.labledger\\.app');
+    }
+
+    // Anonymous sessions and student accounts are signed in but are never staff.
     function isStaff() {
-      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+      return signedIn()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && !isStudent();
     }
 
     // A staff account whose users/{uid} document says role == 'ADMIN'.
@@ -46,11 +55,27 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
-    // users/{userId} — role records. Read-only from the app: roles are granted in the console.
+    // users/{userId} — role records. Staff roles are granted in the console. The ONLY write
+    // the app can make is a student creating their own STUDENT profile at sign-up; it can
+    // never be edited or deleted afterwards, and can never carry another role.
     // ---------------------------------------------------------------------
+    function validStudentProfile(userId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'studentId', 'batch', 'createdAt'])
+        && d.keys().hasAll(['uid', 'email', 'displayName', 'role', 'studentId', 'batch', 'createdAt'])
+        && d.uid == userId
+        && d.email == request.auth.token.email
+        && d.role == 'STUDENT'
+        && nonBlank(d.displayName, 120)
+        && nonBlank(d.studentId, 40)
+        && nonBlank(d.batch, 30)
+        && d.createdAt == request.time;
+    }
+
     match /users/{userId} {
-      allow read: if isStaff() && request.auth.uid == userId;
-      allow write: if false;
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create: if isStudent() && request.auth.uid == userId && validStudentProfile(userId);
+      allow update, delete: if false;
     }
 
     // ---------------------------------------------------------------------

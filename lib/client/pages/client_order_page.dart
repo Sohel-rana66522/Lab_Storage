@@ -12,6 +12,7 @@ import '../../providers/chemical_provider.dart';
 import '../../widgets/common_states.dart';
 import '../../widgets/lab_inputs.dart';
 import '../providers/client_cart_provider.dart';
+import '../providers/client_session_provider.dart';
 import '../providers/order_provider.dart';
 import '../repositories/order_repository.dart';
 import '../utils/client_errors.dart';
@@ -36,6 +37,17 @@ class _ClientOrderPageState extends ConsumerState<ClientOrderPage> {
   bool _slow = false;
   String? _error;
   Timer? _slowTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill from the logged-in student's profile (still editable).
+    final profile = ref.read(studentProfileProvider).valueOrNull;
+    if (profile != null) {
+      _name.text = profile.displayName;
+      _id.text = profile.studentId ?? '';
+    }
+  }
 
   @override
   void dispose() {

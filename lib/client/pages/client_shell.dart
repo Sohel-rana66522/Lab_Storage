@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/responsive.dart';
-import '../../providers/auth_provider.dart';
 import '../../widgets/common_states.dart';
 import '../providers/client_cart_provider.dart';
 import '../providers/client_session_provider.dart';
@@ -195,28 +194,47 @@ class _Header extends ConsumerWidget {
             child: const Icon(Icons.shopping_cart_outlined, color: AppColors.onSurfaceVariant),
           ),
         ),
+        IconButton(
+          tooltip: 'Log out',
+          onPressed: () => _logOut(ref),
+          icon: const Icon(Icons.logout, color: AppColors.onSurfaceVariant),
+        ),
       ]),
     );
   }
 }
 
-/// Waits for the visitor's (anonymous) Firebase session before any page reads Firestore,
-/// so the pages never flash an empty catalogue while signing in.
+/// Clears this device's cart (so the next student does not inherit it) and signs out.
+/// The router then sends the visitor back to the login page.
+Future<void> _logOut(WidgetRef ref) async {
+  ref.read(cartProvider.notifier).clear();
+  await ref.read(studentAuthRepositoryProvider).signOut();
+}
+
+/// Waits for the signed-in student's profile before any page reads Firestore, so the pages
+/// never flash an empty catalogue.
 class _ClientGate extends ConsumerWidget {
   const _ClientGate({required this.child});
   final Widget child;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(clientSessionProvider);
-    final uid = ref.watch(uidProvider);
-    return session.when(
+    final profile = ref.watch(studentProfileProvider);
+    return profile.when(
       loading: () => const LoadingView(),
       error: (e, _) => ErrorView(
         message: clientErrorMessage(e),
-        onRetry: () => ref.invalidate(clientSessionProvider),
+        onRetry: () => ref.invalidate(studentProfileProvider),
       ),
-      data: (_) => uid == null ? const LoadingView() : child,
+      data: (p) => p == null
+          ? EmptyState(
+              icon: Icons.person_off_outlined,
+              title: 'Student profile not found',
+              message: 'Please log out and sign up again.',
+              actionLabel: 'Log out',
+              onAction: () => _logOut(ref),
+            )
+          : child,
     );
   }
 }
